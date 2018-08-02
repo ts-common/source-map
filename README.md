@@ -1,6 +1,8 @@
 # source-map
 Source Map
 
+## TypeScript Repository Initialization
+
 1. `npm init`
 1. `npm install -D typescript`
 1. `package.json`:
