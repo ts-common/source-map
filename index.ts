@@ -5,9 +5,9 @@ export interface SourceLink {
 }
 
 export interface ObjectSource<T> {
-    readonly SourceLink: SourceLink
-    readonly properties: {
-        readonly [K in keyof T]?: ObjectSource<T[K]>
+    readonly link: SourceLink
+    readonly primitiveProperties: {
+        readonly [K in keyof T]?: SourceLink
     }
 }
 
@@ -17,9 +17,9 @@ export interface SourceMap {
 
     readonly get: <O extends object>(original: O) => ObjectSource<O>|undefined
 
-    readonly getProperty: <O extends object, K extends keyof O>(
+    readonly getPrimitiveProperty: <O extends object, K extends keyof O>(
         original: O, k: K
-    ) => ObjectSource<O[K]>|undefined
+    ) => SourceLink|undefined
 
     readonly transform: <O extends object, N extends object>(
         original: O,
@@ -33,12 +33,12 @@ export function sourceMap(): SourceMap {
 
         get: original => map.get(original),
 
-        getProperty: (original, k) => {
+        getPrimitiveProperty: (original, k) => {
             const parent = map.get(original)
             if (parent === undefined) {
                 return undefined
             }
-            return parent.properties[k]
+            return parent.primitiveProperties[k]
         },
 
         transform: (original, factory) => {
