@@ -1,3 +1,5 @@
+import { Tuple2 } from "@ts-common/tuple"
+
 export interface SourceLink {
     readonly fileUrl: string
     readonly line: number
@@ -25,6 +27,8 @@ export interface SourceMap {
         original: O,
         factory: Factory<O, N>
     ) => N
+
+    readonly array: <N>(link: SourceLink, i: Iterable<Tuple2<N, SourceLink>>) => ReadonlyArray<N>
 }
 
 export function sourceMap(): SourceMap {
@@ -49,5 +53,15 @@ export function sourceMap(): SourceMap {
             }
             return result
         },
+
+        array: (link, i) => {
+            const result = []
+            const simpleProperties = []
+            for(const [n, source] of i) {
+                result.push(n)
+                properties
+            }
+            return []
+        }
     }
 }
