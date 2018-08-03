@@ -11,18 +11,17 @@ export interface SourceLink {
     readonly column: number
 }
 
-export interface ObjectSourceLink {
-    readonly link: SourceLink
+export interface ObjectSourceLink extends SourceLink {
     readonly primitiveProperties: StringMap<SourceLink>|ReadonlyArray<SourceLink>
 }
 
-export interface TrackedObject {
+export interface TrackedObjectBase {
     readonly [trackedObjectSymbol]: ObjectSourceLink
 }
 
-export interface TrackedArray<T> extends ReadonlyArray<T>, TrackedObject {}
+export type TrackedObject<T extends object> = T & TrackedObjectBase
 
-export interface TrackedStringMap<T> extends StringMap<T>, TrackedObject {}
+export type TrackedArray<T> = ReadonlyArray<T> & TrackedObjectBase
 
 export type Primitive = boolean|string|number|null
 
@@ -31,16 +30,51 @@ export interface TrackedPrimitive<T extends Primitive> {
     readonly value: T
 }
 
-export type TrackedBase = TrackedObject|TrackedPrimitive<Primitive>
+export type TrackedBase = TrackedObjectBase|TrackedPrimitive<Primitive>
 
-export const isTrackedObject = (source: TrackedBase): source is TrackedObject =>
+export const isTrackedObject = (source: TrackedBase): source is TrackedObjectBase =>
     (source as any)[trackedPrimitiveSymbol] === undefined
 
+export type Tracked<T> =
+    T extends Primitive ? TrackedPrimitive<T> :
+    T extends object ? TrackedObject<T> :
+    undefined
+
+export type TrackedPropertySet<T> = {
+    readonly [K in keyof T]: Tracked<T[K]>
+}
+
+interface MutableTrackedObject {
+    [trackedObjectSymbol]: ObjectSourceLink
+}
+
+function addTrackedObject<T extends object>(value: T): TrackedObject<T> {
+    const result = value as (T & MutableTrackedObject)
+    result[trackedObjectSymbol] = {} as ObjectSourceLink
+    return result
+}
+
+/*
+export const createArray = <I extends TrackedBase>(p: TrackedBase, it: Iterator<I>): TrackedArray<I> => {
+    const result: Array<I> = []
+    const sourceLink: ObjectSourceLink = {}
+    result[trackedObjectSymbol] = sourceLink
+}
+*/
+
+/*
 export interface SourceMap {
-    readonly createArray: <I extends TrackedBase>(p: TrackedBase, it: Iterator<I>) => TrackedArray<I>
+    readonly createArray: <I extends TrackedBase>(
+        p: TrackedBase,
+        it: Iterator<I>
+    ) => TrackedArray<I>
     readonly createStringMap: <I extends TrackedBase>(
         p: TrackedBase,
         it: Iterator<Entry<I>>,
     ) => TrackedStringMap<I>
-    readonly createPropertySet: <T extends TrackedObject>(p: TrackedBase, factory: Factory<T>) => T
+    readonly createPropertySet: <T extends TrackedObject>(
+        p: TrackedBase,
+        factory: Factory<TrackedPropertySet<T>>
+    ) => T
 }
+*/
