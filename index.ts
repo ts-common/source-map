@@ -1,139 +1,46 @@
-import { isArray } from "@ts-common/iterator"
-import { Tuple2 } from "@ts-common/tuple"
-import { Json, JsonObject } from "@ts-common/json"
+import { Factory } from "@ts-common/property-set"
+import { Entry, StringMap } from '@ts-common/string-map';
+
+export const trackedObjectSymbol = Symbol("trackedObject")
+export const trackedPrimitiveSymbol = Symbol("trackedPrimitive")
 
 export interface SourceLink {
     readonly fileUrl: string
+    readonly objectPath: ReadonlyArray<string|number>
     readonly line: number
     readonly column: number
 }
 
-export type PropertiesSource = {
-    readonly [k in string]?: SourceLink
+export interface ObjectSourceLink {
+    readonly link: SourceLink
+    readonly primitiveProperties: StringMap<SourceLink>|ReadonlyArray<SourceLink>
 }
 
-export interface Source {
-    readonly link?: SourceLink
-    readonly properties: PropertiesSource | ReadonlyArray<SourceLink|undefined>
+export interface TrackedObject {
+    readonly [trackedObjectSymbol]: ObjectSourceLink
 }
 
-export interface WithSource<T> {
+export interface TrackedArray<T> extends ReadonlyArray<T>, TrackedObject {}
+
+export interface TrackedStringMap<T> extends StringMap<T>, TrackedObject {}
+
+export type Primitive = boolean|string|number|null
+
+export interface TrackedPrimitive<T extends Primitive> {
+    readonly [trackedPrimitiveSymbol]: SourceLink
     readonly value: T
-    readonly link?: SourceLink
 }
+
+export type TrackedBase = TrackedObject|TrackedPrimitive<Primitive>
+
+export const isTrackedObject = (source: TrackedBase): source is TrackedObject =>
+    (source as any)[trackedPrimitiveSymbol] === undefined
 
 export interface SourceMap {
-    readonly get: (original: Json) => SourceLink|undefined
-    readonly getItem: <O extends Json>(
-        original: ReadonlyArray<O>,
-        k: number
-    ) => SourceLink|undefined
-    readonly getProperty: <O extends JsonObject>(
-        original: O,
-        k: keyof O & string
-    ) => SourceLink|undefined
-
-    readonly array: <T extends Json>(
-        items: Iterable<WithSource<T>>,
-        link?: SourceLink
-    ) => ReadonlyArray<T>
-
-    /*
-    readonly arrayMap: <O extends Json, T extends Json>(
-        original: ReadonlyArray<O>,
-        f: (o: O, link?: SourceLink) => WithSource<T>
-    ) => ReadonlyArray<T>
-    */
+    readonly createArray: <I extends TrackedBase>(p: TrackedBase, it: Iterator<I>) => TrackedArray<I>
+    readonly createStringMap: <I extends TrackedBase>(
+        p: TrackedBase,
+        it: Iterator<Entry<I>>,
+    ) => TrackedStringMap<I>
+    readonly createPropertySet: <T extends TrackedObject>(p: TrackedBase, factory: Factory<T>) => T
 }
-
-export function sourceMap(): SourceMap {
-    const map = new Map<object, Source>()
-    const get = (o: Json) => {
-        if (o === null || typeof o !== "object") {
-            return undefined
-        }
-        const source = map.get(o)
-        return source === undefined ? undefined : source.link
-    }
-    return {
-        get,
-        getItem: (o, k) => {
-            const source = map.get(o)
-            if (source === undefined) { return undefined }
-            const properties = source.properties
-            return isArray(properties) ? properties[k] : undefined
-        },
-        getProperty: (o, k) => {
-            const source = map.get(o)
-            if (source === undefined) { return undefined }
-            const properties = source.properties
-            return isArray(properties) ? undefined : properties[k]
-        },
-        array: <T extends Json>(items: Iterable<WithSource<T>>, link?: SourceLink) => {
-            const result: T[] = []
-            const properties: (SourceLink|undefined)[] = []
-            for (const item of items) {
-                result.push(item.value)
-                properties.push(item.link)
-            }
-            map.set(result, { link, properties })
-            return result
-        }
-    }
-}
-
-/*
-export type Factory<O, N> = (original: O, link: ObjectSource<O>|undefined) => N
-
-export interface SourceMap {
-
-    readonly get: <O extends object>(original: O) => ObjectSource<O>|undefined
-
-    readonly getPrimitiveProperty: <O extends object, K extends keyof O>(
-        original: O, k: K
-    ) => SourceLink|undefined
-
-    /*
-    readonly transform: <O extends object, N extends object>(
-        original: O,
-        factory: Factory<O, N>
-    ) => N
-
-    readonly array: <N>(link: SourceLink, i: Iterable<Tuple2<N, SourceLink>>) => ReadonlyArray<N>
-}
-
-export function sourceMap(): SourceMap {
-    const map = new Map<object, ObjectSource<any>>()
-    return {
-
-        get: original => map.get(original),
-
-        getPrimitiveProperty: (original, k) => {
-            const parent = map.get(original)
-            if (parent === undefined) {
-                return undefined
-            }
-            return parent.primitiveProperties[k]
-        },
-
-        transform: (original, factory) => {
-            const source = map.get(original)
-            const result = factory(original, source)
-            if (source !== undefined) {
-                map.set(result, source)
-            }
-            return result
-        },
-
-        array: (link, i) => {
-            const result = []
-            const simpleProperties = []
-            for(const [n, source] of i) {
-                result.push(n)
-                properties
-            }
-            return []
-        }
-    }
-}
-*/
