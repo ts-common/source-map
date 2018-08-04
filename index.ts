@@ -1,5 +1,4 @@
-import { Factory } from "@ts-common/property-set"
-import { Entry, StringMap } from '@ts-common/string-map';
+import { StringMap } from '@ts-common/string-map';
 
 export const trackedObjectSymbol = Symbol("trackedObject")
 export const trackedPrimitiveSymbol = Symbol("trackedPrimitive")
@@ -48,7 +47,7 @@ interface MutableTrackedObject {
     [trackedObjectSymbol]: ObjectSourceLink
 }
 
-function addTrackedObject<T extends object>(value: T): TrackedObject<T> {
+export function addTrackedObject<T extends object>(value: T): TrackedObject<T> {
     const result = value as (T & MutableTrackedObject)
     result[trackedObjectSymbol] = {} as ObjectSourceLink
     return result
