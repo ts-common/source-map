@@ -1,3 +1,29 @@
+import { Json, JsonObject, JsonArray, JsonPrimitive } from "@ts-common/json"
+
+interface SourceLink {}
+
+interface TrackedBase<T extends Json>{
+    readonly value: T
+    readonly link: SourceLink
+}
+
+type TrackedPrimitive<T extends JsonPrimitive> = TrackedBase<T>
+
+type Tracked<T extends Json|undefined> =
+    T extends JsonObject ? TrackedObject<T> :
+    T extends JsonArray ? TrackedArray<T> :
+    T extends JsonPrimitive ? TrackedPrimitive<T> :
+    undefined
+
+interface TrackedObject<T extends JsonObject> extends TrackedBase<T> {
+    readonly properties: { readonly [K in keyof T]: Tracked<T[K]> }
+}
+
+interface TrackedArray<T extends JsonArray> extends TrackedBase<T> {
+    readonly items: ReadonlyArray<Tracked<Json>>
+}
+
+/*
 import { StringMap, MutableStringMap } from "@ts-common/string-map"
 import { Json, JsonObject, JsonPrimitive } from "@ts-common/json"
 
@@ -73,6 +99,7 @@ export const createArray = <T extends Json>(tracked: TrackedBase, it: Iterable<T
     }
     return addTrackedObject(result, { link: getSourceLink(tracked), primitiveProperties:primitiveProperties })
 }
+*/
 
 /*
 export const createArray = <I extends TrackedBase>(p: TrackedBase, it: Iterator<I>): TrackedArray<I> => {
