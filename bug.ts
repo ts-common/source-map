@@ -1,3 +1,22 @@
+type IsObject<T> = T extends object ? T : never
+
+function asObject(v: {}): object {
+    return v
+}
+
+function acceptObjectOnly(_: object) {}
+
+interface X {
+    toString(): string
+}
+
+const x: X = 3
+
+acceptObjectOnly(x)
+
+acceptObjectOnly(asObject(45))
+
+/*
 function acceptObjectOnly(_: object) {}
 
 acceptObjectOnly(3) // error: as expected
@@ -21,6 +40,7 @@ acceptMyClassOnly(3) // ok: but error is expected
 function acceptNumberOnly(_: number) {}
 
 acceptNumberOnly(someInterface) // error: as expected
+*/
 
 /// strict interfaces
 

@@ -1,4 +1,5 @@
-import { StringMap } from '@ts-common/string-map';
+import { StringMap, MutableStringMap } from "@ts-common/string-map"
+import { Json, JsonObject, JsonPrimitive } from "@ts-common/json"
 
 export const trackedObjectSymbol = Symbol("trackedObject")
 export const trackedPrimitiveSymbol = Symbol("trackedPrimitive")
@@ -10,8 +11,9 @@ export interface SourceLink {
     readonly column: number
 }
 
-export interface ObjectSourceLink extends SourceLink {
-    readonly primitiveProperties: StringMap<SourceLink>|ReadonlyArray<SourceLink>
+export interface ObjectSourceLink {
+    readonly link: SourceLink
+    readonly primitiveProperties: StringMap<SourceLink>
 }
 
 export interface TrackedObjectBase {
@@ -22,24 +24,28 @@ export type TrackedObject<T extends object> = T & TrackedObjectBase
 
 export type TrackedArray<T> = ReadonlyArray<T> & TrackedObjectBase
 
-export type Primitive = boolean|string|number|null
-
-export interface TrackedPrimitive<T extends Primitive> {
+export interface TrackedPrimitive<T extends JsonPrimitive> {
     readonly [trackedPrimitiveSymbol]: SourceLink
     readonly value: T
 }
 
-export type TrackedBase = TrackedObjectBase|TrackedPrimitive<Primitive>
+export type TrackedBase = TrackedObjectBase|TrackedPrimitive<JsonPrimitive>
 
-export const isTrackedObject = (source: TrackedBase): source is TrackedObjectBase =>
-    (source as any)[trackedPrimitiveSymbol] === undefined
+export const isTrackedObject = (tracked: TrackedBase): tracked is TrackedObjectBase =>
+    (tracked as any)[trackedPrimitiveSymbol] === undefined
 
-export type Tracked<T> =
-    T extends Primitive ? TrackedPrimitive<T> :
+export const getSourceLink = (tracked: TrackedBase): SourceLink =>
+    isTrackedObject(tracked) ? tracked[trackedObjectSymbol].link : tracked[trackedPrimitiveSymbol]
+
+export type Tracked<T extends Json|undefined> =
+    // null|string|...
+    T extends JsonPrimitive ? TrackedPrimitive<T> :
+    // JsonObject and JsonArray
     T extends object ? TrackedObject<T> :
+    // undefined
     undefined
 
-export type TrackedPropertySet<T> = {
+export type TrackedPropertySet<T extends JsonObject> = {
     readonly [K in keyof T]: Tracked<T[K]>
 }
 
@@ -47,10 +53,25 @@ interface MutableTrackedObject {
     [trackedObjectSymbol]: ObjectSourceLink
 }
 
-export function addTrackedObject<T extends object>(value: T): TrackedObject<T> {
+export const addTrackedObject = <T extends object>(value: T, link: ObjectSourceLink): TrackedObject<T> => {
     const result = value as (T & MutableTrackedObject)
-    result[trackedObjectSymbol] = {} as ObjectSourceLink
+    result[trackedObjectSymbol] = link
     return result
+}
+
+export const createArray = <T extends Json>(tracked: TrackedBase, it: Iterable<Tracked<T>>): TrackedArray<T> => {
+    const result: Array<T> = []
+    const primitiveProperties: MutableStringMap<SourceLink> = {}
+    for (const i of it) {
+        if (i === undefined) {
+            result.push(undefined as any)
+        }
+        if (isTrackedObject(i)) {
+            result.push(i)
+        }
+        // result.push(i)
+    }
+    return addTrackedObject(result, { link: getSourceLink(tracked), primitiveProperties:primitiveProperties })
 }
 
 /*
