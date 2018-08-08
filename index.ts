@@ -9,14 +9,14 @@ interface File {
     readonly url: string
 }
 
-interface Position {
+export interface FilePosition {
     readonly line: number
     readonly column: number
 }
 
 interface SourceLink {
     readonly parent: TrackedProperty<Json>|File
-    readonly position: Position
+    readonly position: FilePosition
 }
 
 interface TrackedBase<T extends Json>{
