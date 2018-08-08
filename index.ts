@@ -1,11 +1,6 @@
 import { Json, JsonObject, JsonArray, JsonPrimitive } from "@ts-common/json"
 
-interface TrackedProperty<T extends Json> {
-    readonly parent: TrackedProperty<T>
-    readonly name: keyof T
-}
-
-interface File {
+export interface File {
     readonly url: string
 }
 
@@ -17,6 +12,11 @@ export interface FilePosition {
 interface SourceLink {
     readonly parent: TrackedProperty<Json>|File
     readonly position: FilePosition
+}
+
+interface TrackedProperty<T extends Json> {
+    readonly parent: TrackedProperty<T>
+    readonly name: keyof T
 }
 
 interface TrackedBase<T extends Json>{
