@@ -1,6 +1,23 @@
 import { Json, JsonObject, JsonArray, JsonPrimitive } from "@ts-common/json"
 
-interface SourceLink {}
+interface TrackedProperty<T extends Json> {
+    readonly parent: TrackedProperty<T>
+    readonly name: keyof T
+}
+
+interface File {
+    readonly url: string
+}
+
+interface Position {
+    readonly line: number
+    readonly column: number
+}
+
+interface SourceLink {
+    readonly parent: TrackedProperty<Json>|File
+    readonly position: Position
+}
 
 interface TrackedBase<T extends Json>{
     readonly value: T
@@ -10,10 +27,11 @@ interface TrackedBase<T extends Json>{
 type TrackedPrimitive<T extends JsonPrimitive> = TrackedBase<T>
 
 type Tracked<T extends Json|undefined> =
+    T extends undefined ? undefined :
     T extends JsonObject ? TrackedObject<T> :
     T extends JsonArray ? TrackedArray<T> :
     T extends JsonPrimitive ? TrackedPrimitive<T> :
-    undefined
+    never
 
 type TrackedObjectProperties<T extends JsonObject> = {
     readonly [K in keyof T]: Tracked<T[K]>
