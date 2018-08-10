@@ -27,14 +27,17 @@ export interface TrackedBase {
 
 export type Tracked<T extends JsonRef> = T & TrackedBase
 
-interface MutableTrackedBase {
-    [infoSymbol]: Info
-}
-
-type MutableTracked<T extends JsonRef> = T & MutableTrackedBase
-
 export const addInfo = <T extends JsonRef>(value: T, info: Info): Tracked<T> => {
-    const result = value as MutableTracked<T>
+    interface MutableTrackedBase {
+        [infoSymbol]: Info
+    }
+    type MutableTracked = T & MutableTrackedBase
+    const result = value as MutableTracked
     result[infoSymbol] = info
     return result
+}
+
+export const getInfo = (value: JsonRef): Info|undefined => {
+    const withInfo = value as Tracked<JsonRef>
+    return withInfo[infoSymbol]
 }
