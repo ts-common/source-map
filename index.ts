@@ -19,7 +19,7 @@ export interface ObjectInfo {
 
 export type Info = FileInfo|ObjectInfo
 
-const infoSymbol = Symbol("info")
+export const infoSymbol = Symbol("info")
 
 export interface TrackedBase {
     readonly [infoSymbol]: Info
