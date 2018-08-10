@@ -1,6 +1,7 @@
-import { Json, JsonObject, JsonArray, JsonPrimitive } from "@ts-common/json"
+import { JsonRef } from "@ts-common/json"
 
-export interface File {
+export interface FileInfo {
+    readonly kind: "file"
     readonly url: string
 }
 
@@ -9,46 +10,34 @@ export interface FilePosition {
     readonly column: number
 }
 
-interface SourceLink {
-    readonly parent: TrackedProperty<Json>|File
+export interface ObjectInfo {
+    readonly kind: "object"
     readonly position: FilePosition
+    readonly parent: Info
+    readonly property: string|number
 }
 
-interface TrackedProperty<T extends Json> {
-    readonly parent: TrackedProperty<T>
-    readonly name: keyof T
+export type Info = FileInfo|ObjectInfo
+
+export const infoSymbol = Symbol("info")
+
+export interface TrackedBase {
+    readonly [infoSymbol]: Info
 }
 
-interface TrackedBase<T extends Json>{
-    readonly value: T
-    readonly link: SourceLink
+export type Tracked<T extends JsonRef> = T & TrackedBase
+
+export const addInfo = <T extends JsonRef>(value: T, info: Info): Tracked<T> => {
+    interface MutableTrackedBase {
+        [infoSymbol]: Info
+    }
+    type MutableTracked = T & MutableTrackedBase
+    const result = value as MutableTracked
+    result[infoSymbol] = info
+    return result
 }
 
-type TrackedPrimitive<T extends JsonPrimitive> = TrackedBase<T>
-
-type Tracked<T extends Json|undefined> =
-    T extends undefined ? undefined :
-    T extends JsonObject ? TrackedObject<T> :
-    T extends JsonArray ? TrackedArray<T> :
-    T extends JsonPrimitive ? TrackedPrimitive<T> :
-    never
-
-type TrackedObjectProperties<T extends JsonObject> = {
-    readonly [K in keyof T]: Tracked<T[K]>
-}
-
-interface TrackedObject<T extends JsonObject> extends TrackedBase<T> {
-    readonly getProperties: () => TrackedObjectProperties<T>
-}
-
-type Items<T> = T extends ReadonlyArray<infer U> ? U : never
-
-type TrackedItems<T extends JsonArray> = Tracked<Items<T>>
-
-type TrackedArrayItems<T extends JsonArray> = {
-    readonly [K in keyof T & number]: Tracked<T[K]>
-} & ReadonlyArray<TrackedItems<T>>
-
-interface TrackedArray<T extends JsonArray> extends TrackedBase<T> {
-    readonly getItems: () => TrackedArrayItems<T>
+export const getInfo = (value: JsonRef): Info|undefined => {
+    const withInfo = value as Tracked<JsonRef>
+    return withInfo[infoSymbol]
 }
