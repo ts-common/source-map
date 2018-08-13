@@ -1,6 +1,6 @@
 import "mocha"
 import { assert } from "chai"
-import { setInfo, infoSymbol, getInfo, arrayMap, Info } from "./index"
+import { setInfo, infoSymbol, getInfo, arrayMap, Info, stringMapMap } from "./index"
 
 describe("info", () => {
     it("array", () => {
@@ -55,5 +55,22 @@ describe("info", () => {
         assert.deepEqual([["aaa", "", "aaa", ""], ["bb", "bb"], ["c", "d", "c", "d"]], b)
         assert.strictEqual(info, getInfo(b))
         assert.strictEqual(altInfo, getInfo(b[0]))
+    })
+    it("stringMap", () => {
+        const a = { a: 2, b: 3 }
+        const info: Info = { kind: "file", "url": "/" }
+        setInfo(a, info)
+        const x = stringMapMap(a, ([name, value]) => [name, value * value])
+        assert.deepEqual({a: 4, b: 9}, x)
+        assert.strictEqual(info, getInfo(x))
+    })
+    it("stringMapSame", () => {
+        const a = { a: 2, b: 3 }
+        const info: Info = { kind: "file", "url": "/" }
+        setInfo(a, info)
+        const x = stringMapMap(a, ([name, value]) => [name, value])
+        assert.strictEqual(a, x)
+        const infoX = getInfo(x)
+        assert.strictEqual(info, infoX)
     })
 })
