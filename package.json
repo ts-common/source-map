@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/source-map",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Source Map",
   "main": "index.js",
   "scripts": {
@@ -40,6 +40,7 @@
     "typescript": "^3.0.1"
   },
   "dependencies": {
+    "@ts-common/iterator": "0.0.30",
     "@ts-common/json": "0.0.11"
   }
 }
