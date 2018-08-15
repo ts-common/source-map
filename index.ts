@@ -1,6 +1,8 @@
-import { JsonRef, Json } from "@ts-common/json"
-import { StringMap, stringMap, entries, Entry } from "@ts-common/string-map"
-import { map } from "@ts-common/iterator"
+import { JsonRef, Json, JsonObject } from "@ts-common/json"
+import { StringMap, Entry, entryValue } from "@ts-common/string-map"
+import * as sm from "@ts-common/string-map"
+import * as _ from "@ts-common/iterator"
+import * as propertySet from "@ts-common/property-set"
 
 export interface FileInfo {
     readonly kind: "file"
@@ -35,15 +37,18 @@ export const setInfo = <T extends JsonRef>(value: T, info: Info): Tracked<T> => 
     }
     type MutableTracked = T & MutableTrackedBase;
     const result = value as MutableTracked
-    result[infoSymbol] = info
+    if (result[infoSymbol] === undefined) {
+        result[infoSymbol] = info
+    }
     return result
 }
 
-export const copyInfo = (source: JsonRef, dest: JsonRef) => {
+export const copyInfo = <T extends JsonRef>(source: JsonRef, dest: T): T => {
     const info = getInfo(source)
     if (info !== undefined) {
         setInfo(dest, info)
     }
+    return dest
 }
 
 export const getInfo = (value: JsonRef): Info|undefined => {
@@ -51,32 +56,24 @@ export const getInfo = (value: JsonRef): Info|undefined => {
     return withInfo[infoSymbol]
 }
 
-export const copyJsonInfo = (source: Json, dest: Json) => {
+export const copyJsonInfo = <T extends Json>(source: Json, dest: T): T => {
+    const destJson: Json = dest
     if (source !== null &&
         typeof source === "object" &&
-        dest !== null &&
-        typeof dest === "object"
+        destJson !== null &&
+        typeof destJson === "object"
     ) {
-        if (getInfo(dest) === undefined) {
-            copyInfo(source, dest)
-        }
+        copyInfo(source, destJson)
     }
+    return dest
 }
 
 export const arrayMap = <T extends Json, R extends Json>(
     source: ReadonlyArray<T>,
     f: (v: T, i: number) => R
 ): ReadonlyArray<R> => {
-    let same = true
-    const result = source.map((item, i) => {
-        const newItem = f(item, i)
-        if (newItem !== item as any) {
-            same = false
-            copyJsonInfo(item, newItem)
-        }
-        return newItem
-    })
-    if (same) {
+    const result = source.map((v, i) => copyJsonInfo(v, f(v, i)))
+    if (_.isEqual(source, result)) {
         return source as any
     }
     copyInfo(source, result)
@@ -87,22 +84,32 @@ export const stringMapMap = <T extends Json, R extends Json>(
     source: StringMap<T>,
     f: (s: Entry<T>) => Entry<R>
 ): StringMap<R> => {
-    let same = true
-    const result = stringMap(map(
-        entries(source),
-        e => {
-            const r = f(e)
-            if (e[0] === r[0] && e[1] === r[1] as any) {
-                return r
-            }
-            same = false
-            copyJsonInfo(e[1], r[1])
-            return r
-        }
-    ))
-    if (same) {
+    const result = sm.map(source, e => {
+        const r = f(e)
+        copyJsonInfo(entryValue(e), entryValue(r))
+        return r
+    })
+    if (sm.isEqual(source, result)) {
         return source as any
     }
+    copyInfo(source, result)
+    return result
+}
+
+export const propertySetMap = <T extends JsonObject>(
+    source: T,
+    f: propertySet.PartialFactory<T>
+): T => {
+    const result = propertySet.copyCreate(source, f)
+    if (sm.isEqual(source, result)) {
+        return source as any
+    }
+    propertySet.forEach(result, (k, v) => {
+        const sourceValue = source[k] as Json
+        if (sourceValue !== undefined) {
+            copyJsonInfo(sourceValue, v as Json)
+        }
+    })
     copyInfo(source, result)
     return result
 }
