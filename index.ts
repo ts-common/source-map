@@ -98,11 +98,11 @@ export const stringMapMap = <T extends Data, R extends Data>(
     return result
 }
 
-type PartialStringMap<K extends string> = { readonly [k in K]?: Data }
+type PartialStringMap<K> = { readonly [k in K & string]?: Data }
 
-const toStringMap = <T extends PartialStringMap<keyof T & string>>(v: T): StringMap<Data|undefined> => v
+const toStringMap = <T extends PartialStringMap<keyof T>>(v: T): StringMap<Data|undefined> => v
 
-export const propertySetMap = <T extends PartialStringMap<keyof T & string>>(
+export const propertySetMap = <T extends PartialStringMap<keyof T>>(
     source: T,
     f: propertySet.PartialFactory<T>
 ): T => {
