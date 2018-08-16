@@ -1,8 +1,8 @@
-import { JsonRef, Json, JsonObject } from "@ts-common/json"
 import { StringMap, Entry, entryValue } from "@ts-common/string-map"
 import * as sm from "@ts-common/string-map"
 import * as _ from "@ts-common/iterator"
 import * as propertySet from "@ts-common/property-set"
+import { JsonPrimitive } from '@ts-common/json';
 
 export interface FileInfo {
     readonly kind: "file"
@@ -29,9 +29,9 @@ export interface TrackedBase {
     readonly [infoSymbol]: Info
 }
 
-export type Tracked<T extends JsonRef> = T & TrackedBase
+export type Tracked<T extends object> = T & TrackedBase
 
-export const setInfo = <T extends JsonRef>(value: T, info: Info): Tracked<T> => {
+export const setInfo = <T extends object>(value: T, info: Info): Tracked<T> => {
     interface MutableTrackedBase {
         [infoSymbol]: Info
     }
@@ -43,7 +43,7 @@ export const setInfo = <T extends JsonRef>(value: T, info: Info): Tracked<T> => 
     return result
 }
 
-export const copyInfo = <T extends JsonRef>(source: JsonRef, dest: T): T => {
+export const copyInfo = <T extends object>(source: object, dest: T): T => {
     const info = getInfo(source)
     if (info !== undefined) {
         setInfo(dest, info)
@@ -51,13 +51,15 @@ export const copyInfo = <T extends JsonRef>(source: JsonRef, dest: T): T => {
     return dest
 }
 
-export const getInfo = (value: JsonRef): Info|undefined => {
-    const withInfo = value as Tracked<JsonRef>
+export const getInfo = (value: object): Info|undefined => {
+    const withInfo = value as Tracked<object>
     return withInfo[infoSymbol]
 }
 
-export const copyJsonInfo = <T extends Json>(source: Json, dest: T): T => {
-    const destJson: Json = dest
+export type Data = object|JsonPrimitive
+
+export const copyDataInfo = <T extends Data>(source: Data, dest: T): T => {
+    const destJson: Data = dest
     if (source !== null &&
         typeof source === "object" &&
         destJson !== null &&
@@ -68,11 +70,11 @@ export const copyJsonInfo = <T extends Json>(source: Json, dest: T): T => {
     return dest
 }
 
-export const arrayMap = <T extends Json, R extends Json>(
+export const arrayMap = <T extends Data, R extends Data>(
     source: ReadonlyArray<T>,
     f: (v: T, i: number) => R
 ): ReadonlyArray<R> => {
-    const result = source.map((v, i) => copyJsonInfo(v, f(v, i)))
+    const result = source.map((v, i) => copyDataInfo(v, f(v, i)))
     if (_.isEqual(source, result)) {
         return source as any
     }
@@ -80,13 +82,13 @@ export const arrayMap = <T extends Json, R extends Json>(
     return result
 }
 
-export const stringMapMap = <T extends Json, R extends Json>(
+export const stringMapMap = <T extends Data, R extends Data>(
     source: StringMap<T>,
     f: (s: Entry<T>) => Entry<R>
 ): StringMap<R> => {
     const result = sm.map(source, e => {
         const r = f(e)
-        copyJsonInfo(entryValue(e), entryValue(r))
+        copyDataInfo(entryValue(e), entryValue(r))
         return r
     })
     if (sm.isEqual(source, result)) {
@@ -96,7 +98,7 @@ export const stringMapMap = <T extends Json, R extends Json>(
     return result
 }
 
-export const propertySetMap = <T extends JsonObject>(
+export const propertySetMap = <T extends StringMap<Data|undefined>>(
     source: T,
     f: propertySet.PartialFactory<T>
 ): T => {
@@ -105,9 +107,9 @@ export const propertySetMap = <T extends JsonObject>(
         return source as any
     }
     propertySet.forEach(result, (k, v) => {
-        const sourceValue = source[k] as Json
+        const sourceValue = source[k] as Data
         if (sourceValue !== undefined) {
-            copyJsonInfo(sourceValue, v as Json)
+            copyDataInfo(sourceValue, v as Data)
         }
     })
     copyInfo(source, result)
