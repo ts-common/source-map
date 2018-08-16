@@ -98,18 +98,23 @@ export const stringMapMap = <T extends Data, R extends Data>(
     return result
 }
 
-export const propertySetMap = <T extends StringMap<Data|undefined>>(
+type PartialStringMap<K extends string> = { readonly [k in K]?: Data }
+
+const toStringMap = <T extends PartialStringMap<keyof T & string>>(v: T): StringMap<Data|undefined> => v
+
+export const propertySetMap = <T extends PartialStringMap<keyof T & string>>(
     source: T,
     f: propertySet.PartialFactory<T>
 ): T => {
     const result = propertySet.copyCreate(source, f)
-    if (sm.isEqual(source, result)) {
+    if (sm.isEqual(toStringMap(source), toStringMap(result))) {
         return source as any
     }
     propertySet.forEach(result, (k, v) => {
-        const sourceValue = source[k] as Data
-        if (sourceValue !== undefined) {
-            copyDataInfo(sourceValue, v as Data)
+        const sourceValue: Data|undefined = source[k]
+        const vv: Data|undefined = v
+        if (sourceValue !== undefined && vv !== undefined) {
+            copyDataInfo(sourceValue, vv)
         }
     })
     copyInfo(source, result)
