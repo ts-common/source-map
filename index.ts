@@ -98,9 +98,21 @@ export const stringMapMap = <T extends Data, R extends Data>(
     return result
 }
 
+export const stringMapMerge = <T extends Data>(
+    source: StringMap<T>,
+    b: StringMap<T>
+): StringMap<T> => {
+    const result = sm.merge(source, b)
+    if (sm.isEqual(source, result)) {
+        return source
+    }
+    copyInfo(source, result)
+    return result
+}
+
 type PartialStringMap<K> = { readonly [k in K & string]?: Data }
 
-const toStringMap = <T extends PartialStringMap<keyof T>>(v: T): StringMap<Data|undefined> => v
+const toStringMap = <T extends PartialStringMap<keyof T>>(v: T): StringMap<Data> => v
 
 export const propertySetMap = <T extends PartialStringMap<keyof T>>(
     source: T,
