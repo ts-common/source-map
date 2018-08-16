@@ -138,7 +138,7 @@ describe("propertySetMap", () => {
         setInfo(a.a, objectInfo)
         const b = propertySetMap(a, {
             b: () => "ha ha",
-            a: (k: "a") => [k.length]
+            a: ({}, k: "a") => [k.length]
         })
         assert.deepEqual({a: [1], b: "ha ha", c: 12 }, b)
         assert.strictEqual(info, getInfo(b))
@@ -157,7 +157,7 @@ describe("propertySetMap", () => {
         setInfo(a.a, objectInfo)
         const b = propertySetMap(a, {
             b: () => "ha ha",
-            a: (k: "a") => [k.length],
+            a: (_: {}, k: "a") => [k.length],
             d: () => "some value"
         })
         assert.deepEqual({a: [1], b: "ha ha", c: 12, d: "some value" }, b)

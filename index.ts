@@ -110,7 +110,7 @@ export const propertySetMap = <T extends PartialStringMap<keyof T>>(
     if (sm.isEqual(toStringMap(source), toStringMap(result))) {
         return source as any
     }
-    propertySet.forEach(result, (k, v) => {
+    propertySet.forEach(result, (v, k) => {
         const sourceValue: Data|undefined = source[k]
         const vv: Data|undefined = v
         if (sourceValue !== undefined && vv !== undefined) {
