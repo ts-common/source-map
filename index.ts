@@ -98,6 +98,12 @@ export const stringMapMap = <T extends Data, R extends Data>(
     return result
 }
 
+export const stringMapMapOrUndefined = <T extends Data, R extends Data>(
+    source: StringMap<T>|undefined,
+    f: (v: T, k: string) => R
+): StringMap<R>|undefined =>
+    source === undefined ? undefined : stringMapMap(source, f)
+
 export const stringMapMerge = <T extends Data>(
     source: StringMap<T>,
     b: StringMap<T>

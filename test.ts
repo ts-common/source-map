@@ -1,7 +1,8 @@
 import "mocha"
 import { assert } from "chai"
-import { setInfo, infoSymbol, getInfo, arrayMap, Info, stringMapMap, propertySetMap } from "./index"
+import { setInfo, infoSymbol, getInfo, arrayMap, Info, stringMapMap, propertySetMap, stringMapMapOrUndefined, stringMapMerge } from "./index"
 import { Json } from '@ts-common/json';
+import { StringMap } from '@ts-common/string-map';
 
 describe("info", () => {
     it("array", () => {
@@ -17,6 +18,9 @@ describe("info", () => {
         }
         assert.equal(infoX.kind, "file")
     })
+})
+
+describe("arrayMap", () => {
     it("arrayMap", () => {
         const a = ["aaa", "bb", "c"]
         const b = arrayMap(a, v => v)
@@ -57,6 +61,9 @@ describe("info", () => {
         assert.strictEqual(info, getInfo(b))
         assert.strictEqual(altInfo, getInfo(b[0]))
     })
+})
+
+describe("stringMap", () => {
     it("stringMap", () => {
         const a = { a: 2, b: 3 }
         const info: Info = { kind: "file", "url": "/" }
@@ -89,6 +96,45 @@ describe("info", () => {
         assert.deepEqual({a: [4], b: [9]}, x)
         assert.strictEqual(info, getInfo(x))
         assert.strictEqual(objectInfo, getInfo(a.a))
+    })
+})
+
+describe("stringMapOrUndefined", () => {
+    it("stringMap", () => {
+        const a = { a: 2, b: 3 }
+        const info: Info = { kind: "file", "url": "/" }
+        setInfo(a, info)
+        const x = stringMapMapOrUndefined(a, value => value * value)
+        assert.deepEqual({a: 4, b: 9}, x)
+        if (x === undefined) {
+            throw new Error("x === undefined")
+        }
+        assert.strictEqual(info, getInfo(x))
+    })
+    it("undefined", () => {
+        const u: undefined | StringMap<number> = undefined
+        const x = stringMapMapOrUndefined(u, (value: number) => value * value)
+        assert.isUndefined(x)
+    })
+})
+
+describe("stringMapMerge", () => {
+    it("merge", () => {
+        const a = { a: 2, b: 3 }
+        const b = { c: 4, d: -99.01 }
+        const info: Info = { kind: "file", "url": "/" }
+        setInfo(a, info)
+        const result = stringMapMerge(a, b)
+        assert.deepEqual({ a: 2, b: 3, c: 4, d: -99.01 }, result)
+        assert.strictEqual(info, getInfo(result))
+    })
+    it("nothing to merge", () => {
+        const a = { a: 2, b: 3 }
+        const b = {}
+        const info: Info = { kind: "file", "url": "/" }
+        setInfo(a, info)
+        const result = stringMapMerge(a, b)
+        assert.strictEqual(a, result)
     })
 })
 
