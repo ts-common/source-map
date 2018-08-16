@@ -1,6 +1,16 @@
 import "mocha"
 import { assert } from "chai"
-import { setInfo, infoSymbol, getInfo, arrayMap, Info, stringMapMap, propertySetMap, stringMapMapOrUndefined, stringMapMerge } from "./index"
+import {
+    setInfo,
+    infoSymbol,
+    getInfo,
+    arrayMap,
+    Info,
+    stringMapMap,
+    propertySetMap,
+    stringMapMapOrUndefined,
+    stringMapMerge
+} from "./index"
 import { Json } from '@ts-common/json';
 import { StringMap } from '@ts-common/string-map';
 
