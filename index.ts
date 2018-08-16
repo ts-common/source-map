@@ -1,4 +1,4 @@
-import { StringMap, Entry, entryValue } from "@ts-common/string-map"
+import { StringMap } from "@ts-common/string-map"
 import * as sm from "@ts-common/string-map"
 import * as _ from "@ts-common/iterator"
 import * as propertySet from "@ts-common/property-set"
@@ -84,11 +84,11 @@ export const arrayMap = <T extends Data, R extends Data>(
 
 export const stringMapMap = <T extends Data, R extends Data>(
     source: StringMap<T>,
-    f: (s: Entry<T>) => Entry<R>
+    f: (v: T, k: string) => R
 ): StringMap<R> => {
-    const result = sm.map(source, e => {
-        const r = f(e)
-        copyDataInfo(entryValue(e), entryValue(r))
+    const result = sm.map(source, (v, k) => {
+        const r = f(v, k)
+        copyDataInfo(v, r)
         return r
     })
     if (sm.isEqual(source, result)) {

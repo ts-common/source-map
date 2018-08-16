@@ -61,7 +61,7 @@ describe("info", () => {
         const a = { a: 2, b: 3 }
         const info: Info = { kind: "file", "url": "/" }
         setInfo(a, info)
-        const x = stringMapMap(a, ([name, value]) => [name, value * value])
+        const x = stringMapMap(a, value => value * value)
         assert.deepEqual({a: 4, b: 9}, x)
         assert.strictEqual(info, getInfo(x))
     })
@@ -69,7 +69,7 @@ describe("info", () => {
         const a = { a: 2, b: 3 }
         const info: Info = { kind: "file", "url": "/" }
         setInfo(a, info)
-        const x = stringMapMap(a, ([name, value]) => [name, value])
+        const x = stringMapMap(a, value => value)
         assert.strictEqual(a, x)
         const infoX = getInfo(x)
         assert.strictEqual(info, infoX)
@@ -85,7 +85,7 @@ describe("info", () => {
         }
         setInfo(a, info)
         setInfo(a.a, objectInfo)
-        const x = stringMapMap(a, ([name, value]) => [name, [value[0] * value[0]]])
+        const x = stringMapMap(a, value => [value[0] * value[0]])
         assert.deepEqual({a: [4], b: [9]}, x)
         assert.strictEqual(info, getInfo(x))
         assert.strictEqual(objectInfo, getInfo(a.a))
