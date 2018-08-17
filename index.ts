@@ -23,7 +23,7 @@ export interface ObjectInfo {
 
 export type Info = FileInfo|ObjectInfo
 
-export const infoSymbol = Symbol("info")
+export const infoSymbol = Symbol.for("@ts-common/source-map/info")
 
 export interface TrackedBase {
     readonly [infoSymbol]: Info
@@ -83,9 +83,12 @@ export const arrayMap = <T extends Data, R extends Data>(
 }
 
 export const stringMapMap = <T extends Data, R extends Data>(
-    source: StringMap<T>,
+    source: StringMap<T>|undefined,
     f: (v: T, k: string) => R
 ): StringMap<R> => {
+    if (source === undefined) {
+        return {}
+    }
     const result = sm.map(source, (v, k) => {
         const r = f(v, k)
         copyDataInfo(v, r)
@@ -97,12 +100,6 @@ export const stringMapMap = <T extends Data, R extends Data>(
     copyInfo(source, result)
     return result
 }
-
-export const stringMapMapOrUndefined = <T extends Data, R extends Data>(
-    source: StringMap<T>|undefined,
-    f: (v: T, k: string) => R
-): StringMap<R>|undefined =>
-    source === undefined ? undefined : stringMapMap(source, f)
 
 export const stringMapMerge = <T extends Data>(
     source: StringMap<T>,

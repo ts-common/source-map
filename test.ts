@@ -8,7 +8,6 @@ import {
     Info,
     stringMapMap,
     propertySetMap,
-    stringMapMapOrUndefined,
     stringMapMerge
 } from "./index"
 import { Json } from '@ts-common/json';
@@ -107,24 +106,10 @@ describe("stringMap", () => {
         assert.strictEqual(info, getInfo(x))
         assert.strictEqual(objectInfo, getInfo(a.a))
     })
-})
-
-describe("stringMapOrUndefined", () => {
-    it("stringMap", () => {
-        const a = { a: 2, b: 3 }
-        const info: Info = { kind: "file", "url": "/" }
-        setInfo(a, info)
-        const x = stringMapMapOrUndefined(a, value => value * value)
-        assert.deepEqual({a: 4, b: 9}, x)
-        if (x === undefined) {
-            throw new Error("x === undefined")
-        }
-        assert.strictEqual(info, getInfo(x))
-    })
     it("undefined", () => {
         const u: undefined | StringMap<number> = undefined
-        const x = stringMapMapOrUndefined(u, (value: number) => value * value)
-        assert.isUndefined(x)
+        const x = stringMapMap(u, (value: number) => value * value)
+        assert.deepEqual({}, x)
     })
 })
 
