@@ -135,3 +135,6 @@ export const propertySetMap = <T extends PartialStringMap<keyof T>>(
     copyInfo(source, result)
     return result
 }
+
+export const getFileInfo = (info: Info): FileInfo =>
+  info.kind === "file" ? info : getFileInfo(info.parent)

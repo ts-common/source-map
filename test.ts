@@ -8,7 +8,10 @@ import {
     Info,
     stringMapMap,
     propertySetMap,
-    stringMapMerge
+    stringMapMerge,
+    FileInfo,
+    ObjectInfo,
+    getFileInfo
 } from "./index"
 import { Json } from '@ts-common/json';
 import { StringMap } from '@ts-common/string-map';
@@ -204,5 +207,14 @@ describe("propertySetMap", () => {
         assert.deepEqual({a: [1], b: "ha ha", c: 12, d: "some value" }, b)
         assert.strictEqual(info, getInfo(b))
         assert.strictEqual(objectInfo, getInfo(a.a))
+    })
+})
+
+describe("getFileInfo", () => {
+    it("from object", () => {
+        const f: FileInfo = { kind: "file", url: "url" }
+        const a: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const r = getFileInfo(a)
+        assert.strictEqual(f, r)
     })
 })
