@@ -138,3 +138,20 @@ export const propertySetMap = <T extends PartialStringMap<keyof T>>(
 
 export const getFileInfo = (info: Info): FileInfo =>
   info.kind === "file" ? info : getFileInfo(info.parent)
+
+const getReversedPath = (info: Info): Iterable<string|number> => {
+    function* iterator() {
+        if (info.kind === "file") {
+            return
+        }
+        let o : ObjectInfo = info
+        while (o.parent.kind !== "file") {
+            yield o.property
+            o = o.parent
+        }
+    }
+    return _.iterable(iterator)
+}
+
+export const getPath = (info: Info): ReadonlyArray<string|number> =>
+    _.reverse(getReversedPath(info))

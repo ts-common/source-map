@@ -11,7 +11,8 @@ import {
     stringMapMerge,
     FileInfo,
     ObjectInfo,
-    getFileInfo
+    getFileInfo,
+    getPath
 } from "./index"
 import { Json } from '@ts-common/json';
 import { StringMap } from '@ts-common/string-map';
@@ -216,5 +217,27 @@ describe("getFileInfo", () => {
         const a: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: f, property: 0 }
         const r = getFileInfo(a)
         assert.strictEqual(f, r)
+    })
+})
+
+describe("getPath", () => {
+    it("from object", () => {
+        const f: FileInfo = { kind: "file", url: "url" }
+        const a: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const r = getPath(a)
+        assert.deepEqual([], r)
+    })
+    it("from file", () => {
+        const f: FileInfo = { kind: "file", url: "url" }
+        const r = getPath(f)
+        assert.deepEqual([], r)
+    })
+    it("from nested object", () => {
+        const f: FileInfo = { kind: "file", url: "url" }
+        const a: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const b: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: a, property: "haha" }
+        const c: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: b, property: "rtx" }
+        const r = getPath(c)
+        assert.deepEqual(["haha", "rtx"], r)
     })
 })
