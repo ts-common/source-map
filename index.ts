@@ -133,16 +133,12 @@ export const stringMapMerge = <T extends Data>(
     return result
 }
 
-type PartialStringMap<K> = { readonly [k in K & string]?: Data }
-
-const toStringMap = <T extends PartialStringMap<keyof T>>(v: T): StringMap<Data> => v
-
-export const propertySetMap = <T extends PartialStringMap<keyof T>>(
+export const propertySetMap = <T extends sm.PartialStringMap<keyof T & string, Data>>(
     source: T,
     f: propertySet.PartialFactory<T>
 ): T => {
     const result = propertySet.copyCreate(source, f)
-    if (sm.isEqual(toStringMap(source), toStringMap(result))) {
+    if (sm.isEqual(sm.toStringMap(source), sm.toStringMap(result))) {
         return source as any
     }
     propertySet.forEach(result, (v, k) => {
