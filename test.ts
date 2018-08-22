@@ -149,6 +149,10 @@ describe("stringMapMerge", () => {
         const result = stringMapMerge(a, b)
         assert.strictEqual(a, result)
     })
+    it("no inputs", () => {
+        const result = stringMapMerge()
+        assert.deepEqual({}, result)
+    })
 })
 
 describe("propertySetMap", () => {

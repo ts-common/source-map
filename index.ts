@@ -130,10 +130,13 @@ export const stringMapMap = <T extends Data, R extends Data>(
 }
 
 export const stringMapMerge = <T extends Data>(
-    source: StringMap<T>,
-    b: StringMap<T>
+    ...array: Array<StringMap<T>>
 ): StringMap<T> => {
-    const result = sm.merge(source, b)
+    if (array.length === 0) {
+        return {}
+    }
+    const result = sm.merge(...array)
+    const source = array[0]
     if (sm.isEqual(source, result)) {
         return source
     }
