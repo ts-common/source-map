@@ -2,16 +2,15 @@ import "mocha"
 import { assert } from "chai"
 import {
     setInfo,
-    infoSymbol,
+    objectInfoSymbol,
     getInfo,
     arrayMap,
-    Info,
+    ObjectInfo,
     stringMapMap,
     propertySetMap,
     stringMapMerge,
-    FileInfo,
-    ObjectInfo,
-    getFileInfo,
+    RootObjectInfo,
+    getRootObjectInfo,
     getPath
 } from "./index"
 import { Json } from '@ts-common/json';
@@ -20,16 +19,16 @@ import { StringMap } from '@ts-common/string-map';
 describe("info", () => {
     it("array", () => {
         const x: string[] = []
-        const xr = setInfo(x, { kind: "file", url: "/" })
+        const xr = setInfo(x, { kind: "root", url: "/", position: { line: 0, column: 1 } })
         xr.push("3")
         xr.push("4")
-        const info = xr[infoSymbol]
-        assert.equal(info.kind, "file")
+        const info = xr[objectInfoSymbol]
+        assert.equal(info.kind, "root")
         const infoX = getInfo(xr)
         if (infoX === undefined) {
             throw new Error("infoX")
         }
-        assert.equal(infoX.kind, "file")
+        assert.equal(infoX.kind, "root")
     })
 })
 
@@ -41,7 +40,7 @@ describe("arrayMap", () => {
     })
     it("arrayMap", () => {
         const a = ["aaa", "bb", "c"]
-        const info: Info =  { kind: "file", url: "/" }
+        const info: ObjectInfo =  { kind: "root", url: "/", position: { line: 0, column: 1 } }
         setInfo(a, info)
         const b = arrayMap(a, v => v + v)
         assert.deepEqual(["aaaaaa", "bbbb", "cc"], b)
@@ -49,8 +48,8 @@ describe("arrayMap", () => {
     })
     it("arrayMapInfo", () => {
         const a = [["aaa", ""], ["bb"], ["c", "d"]]
-        const info: Info = { kind: "file", url: "/" }
-        const objectInfo: Info = { kind: "object", position: { line: 0, column: 0 }, parent: info, property: 0 }
+        const info: ObjectInfo = { kind: "root", url: "/", position: { line: 0, column: 2 } }
+        const objectInfo: ObjectInfo = { kind: "child", position: { line: 0, column: 0 }, parent: info, property: 0 }
         setInfo(a, info)
         setInfo(a[0], objectInfo)
         const b = arrayMap(a, v => [...v, ...v])
@@ -60,9 +59,9 @@ describe("arrayMap", () => {
     })
     it("arrayMapInfoAlt", () => {
         const a = [["aaa", ""], ["bb"], ["c", "d"]]
-        const info: Info = { kind: "file", url: "/" }
-        const altInfo: Info = { kind: "file", url: "/xxx.json" }
-        const objectInfo: Info = { kind: "object", position: { line: 0, column: 0 }, parent: info, property: 0 }
+        const info: ObjectInfo = { kind: "root", url: "/", position: { line: 3, column: 5 } }
+        const altInfo: ObjectInfo = { kind: "root", url: "/xxx.json", position: { line: 7, column: 8 } }
+        const objectInfo: ObjectInfo = { kind: "child", position: { line: 0, column: 0 }, parent: info, property: 0 }
         setInfo(a, info)
         setInfo(a[0], objectInfo)
         const b = arrayMap(a, v => {
@@ -79,7 +78,7 @@ describe("arrayMap", () => {
 describe("stringMap", () => {
     it("stringMap", () => {
         const a = { a: 2, b: 3 }
-        const info: Info = { kind: "file", "url": "/" }
+        const info: ObjectInfo = { kind: "root", url: "/", position: { line: 5, column: 7 } }
         setInfo(a, info)
         const x = stringMapMap(a, value => value * value)
         assert.deepEqual({a: 4, b: 9}, x)
@@ -87,7 +86,7 @@ describe("stringMap", () => {
     })
     it("stringMapSame", () => {
         const a = { a: 2, b: 3 }
-        const info: Info = { kind: "file", "url": "/" }
+        const info: ObjectInfo = { kind: "root", url: "/", position: { line: 8, column: 0 } }
         setInfo(a, info)
         const x = stringMapMap(a, value => value)
         assert.strictEqual(a, x)
@@ -96,9 +95,9 @@ describe("stringMap", () => {
     })
     it("stringMapObject", () => {
         const a = { a: [2], b: [3] }
-        const info: Info = { kind: "file", "url": "/" }
-        const objectInfo: Info = {
-            kind: "object",
+        const info: ObjectInfo = { kind: "root", url: "/", position: { line: 9, column: 67 } }
+        const objectInfo: ObjectInfo = {
+            kind: "child",
             position: { line: 0, column: 0 },
             parent: info,
             property: 0
@@ -121,7 +120,7 @@ describe("stringMapMerge", () => {
     it("merge", () => {
         const a = { a: 2, b: 3 }
         const b = { c: 4, d: -99.01 }
-        const info: Info = { kind: "file", "url": "/" }
+        const info: ObjectInfo = { kind: "root", url: "/", position: { line: 0, column: 0 }}
         setInfo(a, info)
         const result = stringMapMerge(a, b)
         assert.deepEqual({ a: 2, b: 3, c: 4, d: -99.01 }, result)
@@ -130,7 +129,7 @@ describe("stringMapMerge", () => {
     it("nothing to merge", () => {
         const a = { a: 2, b: 3 }
         const b = {}
-        const info: Info = { kind: "file", "url": "/" }
+        const info: ObjectInfo = { kind: "root", "url": "/", position: { line: 0, column: 0 } }
         setInfo(a, info)
         const result = stringMapMerge(a, b)
         assert.strictEqual(a, result)
@@ -140,9 +139,9 @@ describe("stringMapMerge", () => {
 describe("propertySetMap", () => {
     it("copy", () => {
         const a = { a: [2], b: "ok", c: 12 }
-        const info: Info = { kind: "file", "url": "/" }
-        const objectInfo: Info = {
-            kind: "object",
+        const info: ObjectInfo = { kind: "root", "url": "/", position: { line: 0, column: 0 } }
+        const objectInfo: ObjectInfo = {
+            kind: "child",
             position: { line: 0, column: 0 },
             parent: info,
             property: 0
@@ -154,9 +153,9 @@ describe("propertySetMap", () => {
     })
     it("change", () => {
         const a = { a: [2], b: "ok", c: 12 }
-        const info: Info = { kind: "file", "url": "/" }
-        const objectInfo: Info = {
-            kind: "object",
+        const info: ObjectInfo = { kind: "root", "url": "/", position: { line: 0, column: 0 } }
+        const objectInfo: ObjectInfo = {
+            kind: "child",
             position: { line: 0, column: 0 },
             parent: info,
             property: 0
@@ -172,9 +171,9 @@ describe("propertySetMap", () => {
     })
     it("change object", () => {
         const a = { a: [2], b: "ok", c: 12 }
-        const info: Info = { kind: "file", "url": "/" }
-        const objectInfo: Info = {
-            kind: "object",
+        const info: ObjectInfo = { kind: "root", "url": "/", position: { line: 0, column: 0 } }
+        const objectInfo: ObjectInfo = {
+            kind: "child",
             position: { line: 0, column: 0 },
             parent: info,
             property: 0
@@ -191,9 +190,9 @@ describe("propertySetMap", () => {
     })
     it("add object", () => {
         const a: { a: {}, b: Json, c: Json, d?: string } = { a: [2], b: "ok", c: 12 }
-        const info: Info = { kind: "file", "url": "/" }
-        const objectInfo: Info = {
-            kind: "object",
+        const info: ObjectInfo = { kind: "root", "url": "/", position: { line: 0, column: 0 } }
+        const objectInfo: ObjectInfo = {
+            kind: "child",
             position: { line: 0, column: 0 },
             parent: info,
             property: 0
@@ -211,33 +210,33 @@ describe("propertySetMap", () => {
     })
 })
 
-describe("getFileInfo", () => {
+describe("getRootObjectInfo", () => {
     it("from object", () => {
-        const f: FileInfo = { kind: "file", url: "url" }
-        const a: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: f, property: 0 }
-        const r = getFileInfo(a)
+        const f: RootObjectInfo = { kind: "root", url: "url", position: { line: 0, column: 1 } }
+        const a: ObjectInfo = { kind: "child", position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const r = getRootObjectInfo(a)
         assert.strictEqual(f, r)
     })
 })
 
 describe("getPath", () => {
     it("from object", () => {
-        const f: FileInfo = { kind: "file", url: "url" }
-        const a: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const f: ObjectInfo = { kind: "root", url: "url", position: { line: 1, column: 1 } }
+        const a: ObjectInfo = { kind: "child", position: { line: 1, column: 1 }, parent: f, property: 0 }
         const r = getPath(a)
-        assert.deepEqual([], r)
+        assert.deepEqual([0], r)
     })
     it("from file", () => {
-        const f: FileInfo = { kind: "file", url: "url" }
+        const f: RootObjectInfo = { kind: "root", url: "url", position: { line: 1, column: 1 } }
         const r = getPath(f)
         assert.deepEqual([], r)
     })
     it("from nested object", () => {
-        const f: FileInfo = { kind: "file", url: "url" }
-        const a: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: f, property: 0 }
-        const b: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: a, property: "haha" }
-        const c: ObjectInfo = { kind: "object", position: { line: 1, column: 1 }, parent: b, property: "rtx" }
+        const f: RootObjectInfo = { kind: "root", url: "url", position: { line: 1, column: 1 } }
+        const a: ObjectInfo = { kind: "child", position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const b: ObjectInfo = { kind: "child", position: { line: 1, column: 1 }, parent: a, property: "haha" }
+        const c: ObjectInfo = { kind: "child", position: { line: 1, column: 1 }, parent: b, property: "rtx" }
         const r = getPath(c)
-        assert.deepEqual(["haha", "rtx"], r)
+        assert.deepEqual([0, "haha", "rtx"], r)
     })
 })

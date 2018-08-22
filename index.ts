@@ -4,8 +4,12 @@ import * as _ from "@ts-common/iterator"
 import * as propertySet from "@ts-common/property-set"
 import { JsonPrimitive } from '@ts-common/json';
 
-export interface FileInfo {
-    readonly kind: "file"
+export interface BaseObjectInfo {
+    readonly position: FilePosition
+}
+
+export interface RootObjectInfo extends BaseObjectInfo {
+    readonly kind: "root"
     readonly url: string
 }
 
@@ -14,31 +18,30 @@ export interface FilePosition {
     readonly column: number
 }
 
-export interface ObjectInfo {
-    readonly kind: "object"
-    readonly position: FilePosition
-    readonly parent: Info
+export interface ChildObjectInfo extends BaseObjectInfo {
+    readonly kind: "child"
+    readonly parent: ObjectInfo
     readonly property: string|number
 }
 
-export type Info = FileInfo|ObjectInfo
+export type ObjectInfo = ChildObjectInfo|RootObjectInfo
 
-export const infoSymbol = Symbol.for("@ts-common/source-map/info")
+export const objectInfoSymbol = Symbol.for("@ts-common/source-map/object-info")
 
 export interface TrackedBase {
-    readonly [infoSymbol]: Info
+    readonly [objectInfoSymbol]: ObjectInfo
 }
 
 export type Tracked<T extends object> = T & TrackedBase
 
-export const setInfo = <T extends object>(value: T, info: Info): Tracked<T> => {
+export const setInfo = <T extends object>(value: T, info: ObjectInfo): Tracked<T> => {
     interface MutableTrackedBase {
-        [infoSymbol]: Info
+        [objectInfoSymbol]: ObjectInfo
     }
     type MutableTracked = T & MutableTrackedBase;
     const result = value as MutableTracked
-    if (result[infoSymbol] === undefined) {
-        result[infoSymbol] = info
+    if (result[objectInfoSymbol] === undefined) {
+        result[objectInfoSymbol] = info
     }
     return result
 }
@@ -51,9 +54,9 @@ export const copyInfo = <T extends object>(source: object, dest: T): T => {
     return dest
 }
 
-export const getInfo = (value: object): Info|undefined => {
+export const getInfo = (value: object): ObjectInfo|undefined => {
     const withInfo = value as Tracked<object>
-    return withInfo[infoSymbol]
+    return withInfo[objectInfoSymbol]
 }
 
 export type Data = object|JsonPrimitive
@@ -136,22 +139,19 @@ export const propertySetMap = <T extends PartialStringMap<keyof T>>(
     return result
 }
 
-export const getFileInfo = (info: Info): FileInfo =>
-  info.kind === "file" ? info : getFileInfo(info.parent)
+export const getRootObjectInfo = (info: ObjectInfo): RootObjectInfo =>
+  info.kind === "root" ? info : getRootObjectInfo(info.parent)
 
-const getReversedPath = (info: Info): Iterable<string|number> => {
+const getReversedPath = (info: ObjectInfo): Iterable<string|number> => {
     function* iterator() {
-        if (info.kind === "file") {
-            return
-        }
-        let o : ObjectInfo = info
-        while (o.parent.kind !== "file") {
-            yield o.property
-            o = o.parent
+        let i = info
+        while (i.kind !== "root") {
+            yield i.property
+            i = i.parent
         }
     }
     return _.iterable(iterator)
 }
 
-export const getPath = (info: Info): ReadonlyArray<string|number> =>
+export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
     _.reverse(getReversedPath(info))
