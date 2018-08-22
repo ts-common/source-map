@@ -13,7 +13,8 @@ import {
     getRootObjectInfo,
     getPath,
     createRootObjectInfo,
-    createChildObjectInfo
+    createChildObjectInfo,
+    TrackedBase
 } from "./index"
 import { Json } from '@ts-common/json';
 import { StringMap } from '@ts-common/string-map';
@@ -51,7 +52,8 @@ describe("arrayMap", () => {
     it("arrayMapInfo", () => {
         const a = [["aaa", ""], ["bb"], ["c", "d"]]
         const info: ObjectInfo = createRootObjectInfo({ line: 0, column: 2 }, "/")
-        const objectInfo: ObjectInfo = createChildObjectInfo({ line: 0, column: 0 }, info, 0)
+        const x: TrackedBase = { [objectInfoSymbol]: info }
+        const objectInfo: ObjectInfo = createChildObjectInfo({ line: 0, column: 0 }, x, 0)
         setInfo(a, info)
         setInfo(a[0], objectInfo)
         const b = arrayMap(a, v => [...v, ...v])
@@ -63,7 +65,8 @@ describe("arrayMap", () => {
         const a = [["aaa", ""], ["bb"], ["c", "d"]]
         const info: ObjectInfo = { isChild: false, url: "/", position: { line: 3, column: 5 } }
         const altInfo: ObjectInfo = { isChild: false, url: "/xxx.json", position: { line: 7, column: 8 } }
-        const objectInfo: ObjectInfo = { isChild: true, position: { line: 0, column: 0 }, parent: info, property: 0 }
+        const alt: TrackedBase = { [objectInfoSymbol]: altInfo }
+        const objectInfo: ObjectInfo = { isChild: true, position: { line: 0, column: 0 }, parent: alt, property: 0 }
         setInfo(a, info)
         setInfo(a[0], objectInfo)
         const b = arrayMap(a, v => {
@@ -98,10 +101,11 @@ describe("stringMap", () => {
     it("stringMapObject", () => {
         const a = { a: [2], b: [3] }
         const info: ObjectInfo = { isChild: false, url: "/", position: { line: 9, column: 67 } }
+        const root: TrackedBase = { [objectInfoSymbol]: info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
-            parent: info,
+            parent: root,
             property: 0
         }
         setInfo(a, info)
@@ -142,10 +146,11 @@ describe("propertySetMap", () => {
     it("copy", () => {
         const a = { a: [2], b: "ok", c: 12 }
         const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const root: TrackedBase = { [objectInfoSymbol]: info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
-            parent: info,
+            parent: root,
             property: 0
         }
         setInfo(a, info)
@@ -156,10 +161,11 @@ describe("propertySetMap", () => {
     it("change", () => {
         const a = { a: [2], b: "ok", c: 12 }
         const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const root: TrackedBase = { [objectInfoSymbol]: info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
-            parent: info,
+            parent: root,
             property: 0
         }
         setInfo(a, info)
@@ -174,10 +180,11 @@ describe("propertySetMap", () => {
     it("change object", () => {
         const a = { a: [2], b: "ok", c: 12 }
         const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const root = { [objectInfoSymbol]: info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
-            parent: info,
+            parent: root,
             property: 0
         }
         setInfo(a, info)
@@ -193,10 +200,11 @@ describe("propertySetMap", () => {
     it("add object", () => {
         const a: { a: {}, b: Json, c: Json, d?: string } = { a: [2], b: "ok", c: 12 }
         const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const root = { [objectInfoSymbol]: info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
-            parent: info,
+            parent: root,
             property: 0
         }
         setInfo(a, info)
@@ -215,7 +223,8 @@ describe("propertySetMap", () => {
 describe("getRootObjectInfo", () => {
     it("from object", () => {
         const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 0, column: 1 } }
-        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const root = { [objectInfoSymbol]: f }
+        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: root, property: 0 }
         const r = getRootObjectInfo(a)
         assert.strictEqual(f, r)
     })
@@ -224,7 +233,8 @@ describe("getRootObjectInfo", () => {
 describe("getPath", () => {
     it("from object", () => {
         const f: ObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 } }
-        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: f, property: 0 }
+        const root = { [objectInfoSymbol]: f }
+        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: root, property: 0 }
         const r = getPath(a)
         assert.deepEqual([0], r)
     })
@@ -235,9 +245,12 @@ describe("getPath", () => {
     })
     it("from nested object", () => {
         const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 } }
-        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: f, property: 0 }
-        const b: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: a, property: "haha" }
-        const c: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: b, property: "rtx" }
+        const fo = { [objectInfoSymbol]: f }
+        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: fo, property: 0 }
+        const ao = { [objectInfoSymbol]: a }
+        const b: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: ao, property: "haha" }
+        const bo = { [objectInfoSymbol]: b }
+        const c: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: bo, property: "rtx" }
         const r = getPath(c)
         assert.deepEqual([0, "haha", "rtx"], r)
     })

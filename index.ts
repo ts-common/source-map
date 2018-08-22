@@ -26,13 +26,13 @@ export const createRootObjectInfo = (position: FilePosition, url: string): RootO
 
 export interface ChildObjectInfo extends BaseObjectInfo {
     readonly isChild: true
-    readonly parent: ObjectInfo
+    readonly parent: TrackedBase
     readonly property: string|number
 }
 
 export const createChildObjectInfo = (
     position: FilePosition,
-    parent: ObjectInfo,
+    parent: TrackedBase,
     property: string|number
 ): ChildObjectInfo => ({
     isChild: true,
@@ -153,14 +153,14 @@ export const propertySetMap = <T extends sm.PartialStringMap<keyof T & string, D
 }
 
 export const getRootObjectInfo = (info: ObjectInfo): RootObjectInfo =>
-  !info.isChild ? info : getRootObjectInfo(info.parent)
+  !info.isChild ? info : getRootObjectInfo(info.parent[objectInfoSymbol])
 
 const getReversedPath = (info: ObjectInfo): Iterable<string|number> => {
     function* iterator() {
         let i = info
         while (i.isChild) {
             yield i.property
-            i = i.parent
+            i = i.parent[objectInfoSymbol]
         }
     }
     return _.iterable(iterator)
