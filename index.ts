@@ -168,3 +168,19 @@ const getReversedPath = (info: ObjectInfo): Iterable<string|number> => {
 
 export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
     _.reverse(getReversedPath(info))
+
+export const cloneDeep = <T extends Data>(source: T): T => {
+    const data: Data = source
+    if (data === null ||
+        typeof data === "boolean" ||
+        typeof data === "number" ||
+        typeof data === "string"
+    ) {
+        return source
+    }
+    const result = Array.isArray(data) ?
+        data.map(cloneDeep) :
+        sm.map(data as sm.StringMap<Data>, cloneDeep)
+    copyInfo(data, result)
+    return result as T
+}

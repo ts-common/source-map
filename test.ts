@@ -14,7 +14,9 @@ import {
     getPath,
     createRootObjectInfo,
     createChildObjectInfo,
-    TrackedBase
+    TrackedBase,
+    cloneDeep,
+    Data
 } from "./index"
 import { Json } from '@ts-common/json';
 import { StringMap } from '@ts-common/string-map';
@@ -253,5 +255,61 @@ describe("getPath", () => {
         const c: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: bo, property: "rtx" }
         const r = getPath(c)
         assert.deepEqual([0, "haha", "rtx"], r)
+    })
+})
+
+describe("cloneDeep", () => {
+    it("null", () => {
+        const result = cloneDeep(null)
+        assert.isNull(result)
+    })
+    it("boolean", () => {
+        const result = cloneDeep(true)
+        assert.isTrue(result)
+    })
+    it("string", () => {
+        const result = cloneDeep("some string")
+        assert.strictEqual("some string", result)
+    })
+    it("number", () => {
+        const result = cloneDeep(15.99)
+        assert.strictEqual(15.99, result)
+    })
+    it("array & object", () => {
+        const childArray: Data[] = []
+        const obj = { a: 89, b: childArray, c: [] }
+        const source = [0, "something", null, false, obj]
+        const info = createRootObjectInfo({ line: 1, column: 7}, "hello.json")
+
+        const trackedSource = setInfo(source, info)
+
+        const objInfo = createChildObjectInfo({ line: 1, column: 10 }, trackedSource, 4)
+        const trackedObj = setInfo(obj, objInfo)
+
+        const childArrayInfo = createChildObjectInfo({ line: 1, column: 20 }, trackedObj, "b")
+        setInfo(childArray, childArrayInfo)
+
+        const result = cloneDeep(source)
+
+        assert.notStrictEqual(source, result)
+        assert.deepEqual(source, result)
+        const resultInfo = getInfo(result)
+        assert.strictEqual(info, resultInfo)
+
+        const resultObj = result[4]
+        assert.notStrictEqual(obj, resultObj)
+        assert.deepEqual(obj, resultObj)
+        if (resultObj === null || typeof resultObj !== "object") {
+            throw "resultObj"
+        }
+        const resultObjInfo = getInfo(resultObj)
+        assert.strictEqual(objInfo, resultObjInfo)
+
+        const resultCa = resultObj.b
+        assert.notStrictEqual(resultCa, childArray)
+        assert.deepEqual(resultCa, childArray)
+
+        const resultCaInfo = getInfo(resultCa)
+        assert.strictEqual(childArrayInfo, resultCaInfo)
     })
 })
