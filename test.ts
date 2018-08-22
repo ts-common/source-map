@@ -37,6 +37,13 @@ describe("info", () => {
     })
 })
 
+describe("getInfo", () => {
+    it("no info", () => {
+        const result = getInfo({})
+        assert.isUndefined(result)
+    })
+})
+
 describe("arrayMap", () => {
     it("arrayMap", () => {
         const a = ["aaa", "bb", "c"]

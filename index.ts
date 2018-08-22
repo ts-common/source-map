@@ -51,30 +51,37 @@ export interface TrackedBase {
 
 export type Tracked<T extends object> = T & TrackedBase
 
-export const setInfo = <T extends object>(value: T, info: ObjectInfo): Tracked<T> => {
+export const setInfoFunc = <T extends object>(value: T, infoFunc: () => ObjectInfo): Tracked<T> => {
     interface MutableTrackedBase {
         [objectInfoSymbol]: () => ObjectInfo
     }
     type MutableTracked = T & MutableTrackedBase;
     const result = value as MutableTracked
     if (result[objectInfoSymbol] === undefined) {
-        result[objectInfoSymbol] = () => info
+        result[objectInfoSymbol] = infoFunc
     }
     return result
 }
 
-export const copyInfo = <T extends object>(source: object, dest: T): T => {
-    const info = getInfo(source)
-    if (info !== undefined) {
-        setInfo(dest, info)
-    }
-    return dest
+export const setInfo = <T extends object>(value: T, info: ObjectInfo): Tracked<T> =>
+    setInfoFunc(value, () => info)
+
+export const getInfoFunc = (value: object): (() => ObjectInfo)|undefined => {
+    const withInfo = value as Tracked<object>
+    return withInfo[objectInfoSymbol]
 }
 
 export const getInfo = (value: object): ObjectInfo|undefined => {
-    const withInfo = value as Tracked<object>
-    const f = withInfo[objectInfoSymbol]
+    const f = getInfoFunc(value)
     return f === undefined ? undefined : f()
+}
+
+export const copyInfo = <T extends object>(source: object, dest: T): T => {
+    const info = getInfoFunc(source)
+    if (info !== undefined) {
+        setInfoFunc(dest, info)
+    }
+    return dest
 }
 
 export type Data = object|JsonPrimitive
