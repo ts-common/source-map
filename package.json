@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/source-map",
-  "version": "0.0.22",
+  "version": "0.1.0",
   "description": "Source Map",
   "main": "index.js",
   "scripts": {
@@ -44,6 +44,6 @@
     "@ts-common/iterator": "0.0.35",
     "@ts-common/json": "0.0.15",
     "@ts-common/property-set": "0.0.7",
-    "@ts-common/string-map": "0.0.17"
+    "@ts-common/string-map": "0.0.23"
   }
 }
