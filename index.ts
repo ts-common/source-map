@@ -4,25 +4,42 @@ import * as _ from "@ts-common/iterator"
 import * as propertySet from "@ts-common/property-set"
 import { JsonPrimitive } from '@ts-common/json';
 
-export interface BaseObjectInfo {
-    readonly position: FilePosition
-}
-
-export interface RootObjectInfo extends BaseObjectInfo {
-    readonly kind: "root"
-    readonly url: string
-}
-
 export interface FilePosition {
     readonly line: number
     readonly column: number
 }
 
+export interface BaseObjectInfo {
+    readonly position: FilePosition
+}
+
+export interface RootObjectInfo extends BaseObjectInfo {
+    readonly isChild: false
+    readonly url: string
+}
+
+export const createRootObjectInfo = (position: FilePosition, url: string): RootObjectInfo => ({
+    isChild: false,
+    position,
+    url,
+})
+
 export interface ChildObjectInfo extends BaseObjectInfo {
-    readonly kind: "child"
+    readonly isChild: true
     readonly parent: ObjectInfo
     readonly property: string|number
 }
+
+export const createChildObjectInfo = (
+    position: FilePosition,
+    parent: ObjectInfo,
+    property: string|number
+): ChildObjectInfo => ({
+    isChild: true,
+    position,
+    parent,
+    property,
+})
 
 export type ObjectInfo = ChildObjectInfo|RootObjectInfo
 
@@ -140,12 +157,12 @@ export const propertySetMap = <T extends PartialStringMap<keyof T>>(
 }
 
 export const getRootObjectInfo = (info: ObjectInfo): RootObjectInfo =>
-  info.kind === "root" ? info : getRootObjectInfo(info.parent)
+  !info.isChild ? info : getRootObjectInfo(info.parent)
 
 const getReversedPath = (info: ObjectInfo): Iterable<string|number> => {
     function* iterator() {
         let i = info
-        while (i.kind !== "root") {
+        while (i.isChild) {
             yield i.property
             i = i.parent
         }
