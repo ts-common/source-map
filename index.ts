@@ -46,19 +46,19 @@ export type ObjectInfo = ChildObjectInfo|RootObjectInfo
 export const objectInfoSymbol = Symbol.for("@ts-common/source-map/object-info")
 
 export interface TrackedBase {
-    readonly [objectInfoSymbol]: ObjectInfo
+    readonly [objectInfoSymbol]: () => ObjectInfo
 }
 
 export type Tracked<T extends object> = T & TrackedBase
 
 export const setInfo = <T extends object>(value: T, info: ObjectInfo): Tracked<T> => {
     interface MutableTrackedBase {
-        [objectInfoSymbol]: ObjectInfo
+        [objectInfoSymbol]: () => ObjectInfo
     }
     type MutableTracked = T & MutableTrackedBase;
     const result = value as MutableTracked
     if (result[objectInfoSymbol] === undefined) {
-        result[objectInfoSymbol] = info
+        result[objectInfoSymbol] = () => info
     }
     return result
 }
@@ -73,7 +73,8 @@ export const copyInfo = <T extends object>(source: object, dest: T): T => {
 
 export const getInfo = (value: object): ObjectInfo|undefined => {
     const withInfo = value as Tracked<object>
-    return withInfo[objectInfoSymbol]
+    const f = withInfo[objectInfoSymbol]
+    return f === undefined ? undefined : f()
 }
 
 export type Data = object|JsonPrimitive
@@ -153,14 +154,14 @@ export const propertySetMap = <T extends sm.PartialStringMap<keyof T & string, D
 }
 
 export const getRootObjectInfo = (info: ObjectInfo): RootObjectInfo =>
-  !info.isChild ? info : getRootObjectInfo(info.parent[objectInfoSymbol])
+  !info.isChild ? info : getRootObjectInfo(info.parent[objectInfoSymbol]())
 
 const getReversedPath = (info: ObjectInfo): Iterable<string|number> => {
     function* iterator() {
         let i = info
         while (i.isChild) {
             yield i.property
-            i = i.parent[objectInfoSymbol]
+            i = i.parent[objectInfoSymbol]()
         }
     }
     return _.iterable(iterator)
