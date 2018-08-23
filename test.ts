@@ -153,6 +153,10 @@ describe("stringMapMerge", () => {
         const result = stringMapMerge()
         assert.deepEqual({}, result)
     })
+    it("undefined source", () => {
+        const result = stringMapMerge(undefined, { a: 5 })
+        assert.deepEqual({ a: 5 }, result)
+    })
 })
 
 describe("propertySetMap", () => {
