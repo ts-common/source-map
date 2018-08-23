@@ -87,6 +87,10 @@ describe("arrayMap", () => {
         assert.strictEqual(info, getInfo(b))
         assert.strictEqual(altInfo, getInfo(b[0]))
     })
+    it("undefined", () => {
+        const result = arrayMap(undefined, _ => _)
+        assert.deepEqual(result, [])
+    })
 })
 
 describe("stringMap", () => {

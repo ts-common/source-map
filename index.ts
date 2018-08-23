@@ -99,9 +99,12 @@ export const copyDataInfo = <T extends Data>(source: Data, dest: T): T => {
 }
 
 export const arrayMap = <T extends Data, R extends Data>(
-    source: ReadonlyArray<T>,
+    source: ReadonlyArray<T>|undefined,
     f: (v: T, i: number) => R
 ): ReadonlyArray<R> => {
+    if (source === undefined) {
+        return []
+    }
     const result = source.map((v, i) => copyDataInfo(v, f(v, i)))
     if (_.isEqual(source, result)) {
         return source as any
