@@ -24,7 +24,7 @@ import { StringMap } from '@ts-common/string-map';
 describe("info", () => {
     it("array", () => {
         const x: string[] = []
-        const xr = setInfo(x, createRootObjectInfo({ line: 0, column: 1 }, "/"))
+        const xr = setInfo(x, createRootObjectInfo({ line: 0, column: 1 }, "/", {}))
         xr.push("3")
         xr.push("4")
         const info = xr[objectInfoSymbol]()
@@ -52,7 +52,7 @@ describe("arrayMap", () => {
     })
     it("arrayMap", () => {
         const a = ["aaa", "bb", "c"]
-        const info: ObjectInfo = createRootObjectInfo({ line: 0, column: 1 }, "/")
+        const info: ObjectInfo = createRootObjectInfo({ line: 0, column: 1 }, "/", {})
         setInfo(a, info)
         const b = arrayMap(a, v => v + v)
         assert.deepEqual(["aaaaaa", "bbbb", "cc"], b)
@@ -60,9 +60,9 @@ describe("arrayMap", () => {
     })
     it("arrayMapInfo", () => {
         const a = [["aaa", ""], ["bb"], ["c", "d"]]
-        const info: ObjectInfo = createRootObjectInfo({ line: 0, column: 2 }, "/")
+        const info: ObjectInfo = createRootObjectInfo({ line: 0, column: 2 }, "/", {})
         const x: TrackedBase = { [objectInfoSymbol]: () => info }
-        const objectInfo: ObjectInfo = createChildObjectInfo({ line: 0, column: 0 }, x, 0)
+        const objectInfo: ObjectInfo = createChildObjectInfo({ line: 0, column: 0 }, x, 0, {})
         setInfo(a, info)
         setInfo(a[0], objectInfo)
         const b = arrayMap(a, v => [...v, ...v])
@@ -72,10 +72,10 @@ describe("arrayMap", () => {
     })
     it("arrayMapInfoAlt", () => {
         const a = [["aaa", ""], ["bb"], ["c", "d"]]
-        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 3, column: 5 } }
-        const altInfo: ObjectInfo = { isChild: false, url: "/xxx.json", position: { line: 7, column: 8 } }
+        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 3, column: 5 }, primitiveProperties: {} }
+        const altInfo: ObjectInfo = { isChild: false, url: "/xxx.json", position: { line: 7, column: 8 }, primitiveProperties: {} }
         const alt: TrackedBase = { [objectInfoSymbol]: () => altInfo }
-        const objectInfo: ObjectInfo = { isChild: true, position: { line: 0, column: 0 }, parent: alt, property: 0 }
+        const objectInfo: ObjectInfo = { isChild: true, position: { line: 0, column: 0 }, parent: alt, property: 0, primitiveProperties: {} }
         setInfo(a, info)
         setInfo(a[0], objectInfo)
         const b = arrayMap(a, v => {
@@ -96,7 +96,7 @@ describe("arrayMap", () => {
 describe("stringMap", () => {
     it("stringMap", () => {
         const a = { a: 2, b: 3 }
-        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 5, column: 7 } }
+        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 5, column: 7 }, primitiveProperties: {} }
         setInfo(a, info)
         const x = stringMapMap(a, value => value * value)
         assert.deepEqual({a: 4, b: 9}, x)
@@ -104,7 +104,7 @@ describe("stringMap", () => {
     })
     it("stringMapSame", () => {
         const a = { a: 2, b: 3 }
-        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 8, column: 0 } }
+        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 8, column: 0 }, primitiveProperties: {} }
         setInfo(a, info)
         const x = stringMapMap(a, value => value)
         assert.strictEqual(a, x)
@@ -113,13 +113,14 @@ describe("stringMap", () => {
     })
     it("stringMapObject", () => {
         const a = { a: [2], b: [3] }
-        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 9, column: 67 } }
+        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 9, column: 67 }, primitiveProperties: {} }
         const root: TrackedBase = { [objectInfoSymbol]: () => info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
             parent: root,
-            property: 0
+            property: 0,
+            primitiveProperties: {}
         }
         setInfo(a, info)
         setInfo(a.a, objectInfo)
@@ -139,7 +140,7 @@ describe("stringMapMerge", () => {
     it("merge", () => {
         const a = { a: 2, b: 3 }
         const b = { c: 4, d: -99.01 }
-        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 0, column: 0 }}
+        const info: ObjectInfo = { isChild: false, url: "/", position: { line: 0, column: 0 }, primitiveProperties: {}}
         setInfo(a, info)
         const result = stringMapMerge(a, b)
         assert.deepEqual({ a: 2, b: 3, c: 4, d: -99.01 }, result)
@@ -148,7 +149,7 @@ describe("stringMapMerge", () => {
     it("nothing to merge", () => {
         const a = { a: 2, b: 3 }
         const b = {}
-        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 }, primitiveProperties: {} }
         setInfo(a, info)
         const result = stringMapMerge(a, b)
         assert.strictEqual(a, result)
@@ -166,13 +167,14 @@ describe("stringMapMerge", () => {
 describe("propertySetMap", () => {
     it("copy", () => {
         const a = { a: [2], b: "ok", c: 12 }
-        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 }, primitiveProperties: {} }
         const root: TrackedBase = { [objectInfoSymbol]: () => info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
             parent: root,
-            property: 0
+            property: 0,
+            primitiveProperties: {}
         }
         setInfo(a, info)
         setInfo(a.a, objectInfo)
@@ -181,13 +183,14 @@ describe("propertySetMap", () => {
     })
     it("change", () => {
         const a = { a: [2], b: "ok", c: 12 }
-        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 }, primitiveProperties: {} }
         const root: TrackedBase = { [objectInfoSymbol]: () => info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
             parent: root,
-            property: 0
+            property: 0,
+            primitiveProperties: {}
         }
         setInfo(a, info)
         setInfo(a.a, objectInfo)
@@ -200,13 +203,14 @@ describe("propertySetMap", () => {
     })
     it("change object", () => {
         const a = { a: [2], b: "ok", c: 12 }
-        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 }, primitiveProperties: {} }
         const root = { [objectInfoSymbol]: () => info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
             parent: root,
-            property: 0
+            property: 0,
+            primitiveProperties: {}
         }
         setInfo(a, info)
         setInfo(a.a, objectInfo)
@@ -220,13 +224,14 @@ describe("propertySetMap", () => {
     })
     it("add object", () => {
         const a: { a: {}, b: Json, c: Json, d?: string } = { a: [2], b: "ok", c: 12 }
-        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 } }
+        const info: ObjectInfo = { isChild: false, "url": "/", position: { line: 0, column: 0 }, primitiveProperties: {} }
         const root = { [objectInfoSymbol]: () => info }
         const objectInfo: ObjectInfo = {
             isChild: true,
             position: { line: 0, column: 0 },
             parent: root,
-            property: 0
+            property: 0,
+            primitiveProperties: {}
         }
         setInfo(a, info)
         setInfo(a.a, objectInfo)
@@ -243,9 +248,9 @@ describe("propertySetMap", () => {
 
 describe("getRootObjectInfo", () => {
     it("from object", () => {
-        const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 0, column: 1 } }
+        const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 0, column: 1 }, primitiveProperties: {} }
         const root = { [objectInfoSymbol]: () => f }
-        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: root, property: 0 }
+        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: root, property: 0, primitiveProperties: {} }
         const r = getRootObjectInfo(a)
         assert.strictEqual(f, r)
     })
@@ -253,25 +258,25 @@ describe("getRootObjectInfo", () => {
 
 describe("getPath", () => {
     it("from object", () => {
-        const f: ObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 } }
+        const f: ObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 }, primitiveProperties: {} }
         const root = { [objectInfoSymbol]: () => f }
-        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: root, property: 0 }
+        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: root, property: 0, primitiveProperties: {} }
         const r = getPath(a)
         assert.deepEqual([0], r)
     })
     it("from file", () => {
-        const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 } }
+        const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 }, primitiveProperties: {} }
         const r = getPath(f)
         assert.deepEqual([], r)
     })
     it("from nested object", () => {
-        const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 } }
+        const f: RootObjectInfo = { isChild: false, url: "url", position: { line: 1, column: 1 }, primitiveProperties: {} }
         const fo = { [objectInfoSymbol]: () => f }
-        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: fo, property: 0 }
+        const a: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: fo, property: 0, primitiveProperties: {} }
         const ao = { [objectInfoSymbol]: () => a }
-        const b: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: ao, property: "haha" }
+        const b: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: ao, property: "haha", primitiveProperties: {} }
         const bo = { [objectInfoSymbol]: () => b }
-        const c: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: bo, property: "rtx" }
+        const c: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: bo, property: "rtx", primitiveProperties: {} }
         const r = getPath(c)
         assert.deepEqual([0, "haha", "rtx"], r)
     })
@@ -298,14 +303,14 @@ describe("cloneDeep", () => {
         const childArray: Data[] = []
         const obj = { a: 89, b: childArray, c: [] }
         const source = [0, "something", null, false, obj]
-        const info = createRootObjectInfo({ line: 1, column: 7}, "hello.json")
+        const info = createRootObjectInfo({ line: 1, column: 7}, "hello.json", {})
 
         const trackedSource = setInfo(source, info)
 
-        const objInfo = createChildObjectInfo({ line: 1, column: 10 }, trackedSource, 4)
+        const objInfo = createChildObjectInfo({ line: 1, column: 10 }, trackedSource, 4, {})
         const trackedObj = setInfo(obj, objInfo)
 
-        const childArrayInfo = createChildObjectInfo({ line: 1, column: 20 }, trackedObj, "b")
+        const childArrayInfo = createChildObjectInfo({ line: 1, column: 20 }, trackedObj, "b", {})
         setInfo(childArray, childArrayInfo)
 
         const result = cloneDeep(source)

@@ -11,6 +11,7 @@ export interface FilePosition {
 
 export interface BaseObjectInfo {
     readonly position: FilePosition
+    readonly primitiveProperties: StringMap<FilePosition>
 }
 
 export interface RootObjectInfo extends BaseObjectInfo {
@@ -18,10 +19,15 @@ export interface RootObjectInfo extends BaseObjectInfo {
     readonly url: string
 }
 
-export const createRootObjectInfo = (position: FilePosition, url: string): RootObjectInfo => ({
+export const createRootObjectInfo = (
+    position: FilePosition,
+    url: string,
+    primitiveProperties: StringMap<FilePosition>
+): RootObjectInfo => ({
     isChild: false,
     position,
     url,
+    primitiveProperties
 })
 
 export interface ChildObjectInfo extends BaseObjectInfo {
@@ -33,12 +39,14 @@ export interface ChildObjectInfo extends BaseObjectInfo {
 export const createChildObjectInfo = (
     position: FilePosition,
     parent: TrackedBase,
-    property: string|number
+    property: string|number,
+    primitiveProperties: StringMap<FilePosition>
 ): ChildObjectInfo => ({
     isChild: true,
     position,
     parent,
     property,
+    primitiveProperties
 })
 
 export type ObjectInfo = ChildObjectInfo|RootObjectInfo
