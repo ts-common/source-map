@@ -433,4 +433,39 @@ describe("getDescendatnFilePosition", () => {
         const aPosition = getDescendantFilePosition(v, ["abracadabra", 0])
         assert.strictEqual(position, aPosition)
     })
+    it("invalid path", () => {
+        const position = { line: 12, column: 14 }
+        const info : RootObjectInfo = {
+            isChild: false,
+            url: "someurl",
+            position: { line: 0, column: 0 },
+            primitiveProperties: {}
+        }
+        const a = [54]
+        const v = setInfo({ abracadabra: a }, info)
+        const aInfo: ChildObjectInfo = {
+            isChild: true,
+            parent: v,
+            property: "abracadabra",
+            position: { line: 0, column: 0 },
+            primitiveProperties: {
+                0: position
+            }
+        }
+        setInfo(a, aInfo)
+        const aPosition = getDescendantFilePosition(v, ["abracadabraXXX", 0])
+        assert.isUndefined(aPosition)
+    })
+    it("undefined", () => {
+        const position = { line: 12, column: 14 }
+        const info : RootObjectInfo = {
+            isChild: false,
+            url: "someurl",
+            position,
+            primitiveProperties: {}
+        }
+        const v = setInfo({}, info)
+        const vPosition = getDescendantFilePosition(v, undefined)
+        assert.strictEqual(vPosition, position)
+    })
 })

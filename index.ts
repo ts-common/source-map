@@ -232,12 +232,18 @@ export const getChildFilePosition = (data: object, index: string|number): FilePo
 
 export const getDescendantFilePosition = (
     object: object,
-    path: Iterable<string|number>
+    path: Iterable<string|number>|undefined
 ): FilePosition|undefined => {
+    if (path === undefined) {
+        return getFilePosition(object)
+    }
     let index: string|number|undefined = undefined
     for (const i of path) {
         if (index !== undefined) {
             object = (object as any)[index]
+        }
+        if (object === null || typeof object !== "object") {
+            return undefined
         }
         index = i
     }
