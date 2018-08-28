@@ -9,6 +9,7 @@ import {
     stringMapMap,
     propertySetMap,
     stringMapMerge,
+    ChildObjectInfo,
     RootObjectInfo,
     getRootObjectInfo,
     getPath,
@@ -16,7 +17,8 @@ import {
     createChildObjectInfo,
     TrackedBase,
     cloneDeep,
-    Data
+    Data,
+    getDescendantFilePosition
 } from "./index"
 import { Json } from '@ts-common/json';
 import { StringMap } from '@ts-common/string-map';
@@ -335,5 +337,100 @@ describe("cloneDeep", () => {
 
         const resultCaInfo = getInfo(resultCa)
         assert.strictEqual(childArrayInfo, resultCaInfo)
+    })
+})
+
+describe("getDescendatnFilePosition", () => {
+    it("empty", () => {
+        const position = { line: 12, column: 14 }
+        const info : RootObjectInfo = {
+            isChild: false,
+            url: "someurl",
+            position,
+            primitiveProperties: {}
+        }
+        const v = setInfo({}, info)
+        const vPosition = getDescendantFilePosition(v, [])
+        assert.strictEqual(vPosition, position)
+    })
+    it("none", () => {
+        const vPosition = getDescendantFilePosition({}, [])
+        assert.isUndefined(vPosition)
+    })
+    it("primitive", () => {
+        const position = { line: 12, column: 14 }
+        const info : RootObjectInfo = {
+            isChild: false,
+            url: "someurl",
+            position: { line: 0, column: 0 },
+            primitiveProperties: {
+                abracadabra: position
+            }
+        }
+        const v = setInfo({ abracadabra: 54 }, info)
+        const vPosition = getDescendantFilePosition(v, ["abracadabra"])
+        assert.strictEqual(vPosition, position)
+    })
+    it("no child", () => {
+        const position = { line: 12, column: 14 }
+        const info : RootObjectInfo = {
+            isChild: false,
+            url: "someurl",
+            position: { line: 0, column: 0 },
+            primitiveProperties: {
+                abracadabra: position
+            }
+        }
+        const v = setInfo({ abracadabraX: 54 }, info)
+        const vPosition = getDescendantFilePosition(v, ["abracadabra"])
+        assert.isUndefined(vPosition)
+    })
+    it("primitive, no info", () => {
+        const vPosition = getDescendantFilePosition({ abracadabra: 54 }, ["abracadabra"])
+        assert.isUndefined(vPosition)
+    })
+    it("object", () => {
+        const position = { line: 12, column: 14 }
+        const info : RootObjectInfo = {
+            isChild: false,
+            url: "someurl",
+            position: { line: 0, column: 0 },
+            primitiveProperties: {}
+        }
+        const a = {}
+        const v = setInfo({ abracadabra: a }, info)
+        const aInfo: ChildObjectInfo = {
+            isChild: true,
+            parent: v,
+            property: "abracadabra",
+            position,
+            primitiveProperties: {}
+        }
+        setInfo(a, aInfo)
+        const aPosition = getDescendantFilePosition(v, ["abracadabra"])
+        assert.strictEqual(position, aPosition)
+    })
+    it("array,primitive", () => {
+        const position = { line: 12, column: 14 }
+        const info : RootObjectInfo = {
+            isChild: false,
+            url: "someurl",
+            position: { line: 0, column: 0 },
+            primitiveProperties: {}
+        }
+        const a = [54]
+        const v = setInfo({ abracadabra: a }, info)
+        const aInfo: ChildObjectInfo = {
+            isChild: true,
+            parent: v,
+            property: "abracadabra",
+            position: { line: 0, column: 0 },
+            primitiveProperties: {
+                0: position
+            }
+        }
+        setInfo(a, aInfo)
+        const aPosition = getDescendantFilePosition(v, ["abracadabra", 0])
+        assert.strictEqual(position, aPosition)
     })
 })

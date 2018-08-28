@@ -2,7 +2,7 @@ import { StringMap } from "@ts-common/string-map"
 import * as sm from "@ts-common/string-map"
 import * as _ from "@ts-common/iterator"
 import * as propertySet from "@ts-common/property-set"
-import { JsonPrimitive } from '@ts-common/json';
+import { JsonPrimitive, isPrimitive } from '@ts-common/json';
 
 export interface FilePosition {
     readonly line: number
@@ -208,4 +208,41 @@ export const cloneDeep = <T extends Data>(source: T): T => {
         sm.map(data as sm.StringMap<Data>, cloneDeep)
     copyInfo(data, result)
     return result as T
+}
+
+export const getFilePosition = (value: object): FilePosition|undefined => {
+    const info = getInfo(value)
+    return info !== undefined ? info.position : undefined
+}
+
+export const getChildFilePosition = (data: object, index: string|number): FilePosition|undefined => {
+    const child: Data|undefined = (data as any)[index]
+    if (child === undefined) {
+        return undefined
+    }
+    if (isPrimitive(child)) {
+        const info = getInfo(data)
+        if (info === undefined) {
+            return undefined
+        }
+        return info.primitiveProperties[index]
+    }
+    return getFilePosition(child)
+}
+
+export const getDescendantFilePosition = (
+    object: object,
+    path: Iterable<string|number>
+): FilePosition|undefined => {
+    let index: string|number|undefined = undefined
+    for (const i of path) {
+        if (index !== undefined) {
+            object = (object as any)[index]
+        }
+        index = i
+    }
+    if (index === undefined) {
+        return getFilePosition(object)
+    }
+    return getChildFilePosition(object, index)
 }
