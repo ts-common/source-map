@@ -7,6 +7,10 @@ import { JsonPrimitive, isPrimitive } from '@ts-common/json';
 export interface FilePosition {
     readonly line: number
     readonly column: number
+    /**
+     * This optional field can be used by parsers to set directives/pragmas.
+     */
+    readonly directives?: StringMap<unknown>
 }
 
 export interface BaseObjectInfo {
@@ -121,6 +125,12 @@ export const arrayMap = <T extends Data, R extends Data>(
     return result
 }
 
+/**
+ * Transform an object.
+ *
+ * @param source
+ * @param f
+ */
 export const stringMapMap = <T extends Data, R extends Data>(
     source: StringMap<T>|undefined,
     f: (v: T, k: string) => R
@@ -140,6 +150,11 @@ export const stringMapMap = <T extends Data, R extends Data>(
     return result
 }
 
+/**
+ * Merge objects
+ *
+ * @param array
+ */
 export const stringMapMerge = <T extends Data>(
     ...array: Array<StringMap<T>|undefined>
 ): StringMap<T> => {
@@ -210,11 +225,22 @@ export const cloneDeep = <T extends Data>(source: T): T => {
     return result as T
 }
 
+/**
+ * Get a file position
+ *
+ * @param value
+ */
 export const getFilePosition = (value: object): FilePosition|undefined => {
     const info = getInfo(value)
     return info !== undefined ? info.position : undefined
 }
 
+/**
+ * Get a position of a child.
+ *
+ * @param data
+ * @param index
+ */
 export const getChildFilePosition = (data: object, index: string|number): FilePosition|undefined => {
     const child: Data|undefined = (data as any)[index]
     if (child === undefined) {
@@ -230,6 +256,12 @@ export const getChildFilePosition = (data: object, index: string|number): FilePo
     return getFilePosition(child)
 }
 
+/**
+ * Get a file position of a descendant by path.
+ *
+ * @param object
+ * @param path
+ */
 export const getDescendantFilePosition = (
     object: object,
     path: Iterable<string|number>|undefined
