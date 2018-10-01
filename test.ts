@@ -18,10 +18,12 @@ import {
     TrackedBase,
     cloneDeep,
     Data,
-    getDescendantFilePosition
+    getDescendantFilePosition,
+    FilePosition,
+    getAllDirectives
 } from "./index"
-import { Json } from '@ts-common/json';
-import { StringMap } from '@ts-common/string-map';
+import { Json } from '@ts-common/json'
+import { StringMap } from '@ts-common/string-map'
 
 describe("info", () => {
     it("array", () => {
@@ -340,7 +342,7 @@ describe("cloneDeep", () => {
     })
 })
 
-describe("getDescendatnFilePosition", () => {
+describe("getDescendantFilePosition", () => {
     it("empty", () => {
         const position = { line: 12, column: 14 }
         const info : RootObjectInfo = {
@@ -467,5 +469,85 @@ describe("getDescendatnFilePosition", () => {
         const v = setInfo({}, info)
         const vPosition = getDescendantFilePosition(v, undefined)
         assert.strictEqual(vPosition, position)
+    })
+})
+
+describe("getAllDirectives", () => {
+    it("primitive", () => {
+        const propertyPosition : FilePosition = { line: 12, column: 14, directives: { abracadabra: 57, a: 43 } }
+        const rootPosition : FilePosition = { line: 12, column: 14, directives: { abracadabra: 75, b: 34 } }
+        const rootInfo : RootObjectInfo = {
+            isChild: false,
+            url: "something",
+            position: rootPosition,
+            primitiveProperties: { ttt: propertyPosition }
+        }
+        const v = setInfo({ ttt: "x" }, rootInfo)
+        const directives = getAllDirectives(v, ["ttt"])
+        assert.deepStrictEqual(
+            directives,
+            {
+                a: 43,
+                abracadabra: 57,
+                b: 34
+            }
+        )
+    })
+    it("invalid", () => {
+        const propertyPosition : FilePosition = { line: 12, column: 14, directives: { abracadabra: 57, a: 43 } }
+        const rootPosition : FilePosition = { line: 12, column: 14, directives: { abracadabra: 75, b: 34 } }
+        const rootInfo : RootObjectInfo = {
+            isChild: false,
+            url: "something",
+            position: rootPosition,
+            primitiveProperties: { ttt: propertyPosition }
+        }
+        const v = setInfo({ ttt: "x" }, rootInfo)
+        const directives = getAllDirectives(v, ["ttt", 13])
+        assert.deepStrictEqual(
+            directives,
+            {}
+        )
+    })
+    it("empty", () => {
+        const propertyPosition : FilePosition = { line: 12, column: 14, directives: { abracadabra: 57, a: 43 } }
+        const rootPosition : FilePosition = { line: 12, column: 14, directives: { abracadabra: 75, b: 34 } }
+        const rootInfo : RootObjectInfo = {
+            isChild: false,
+            url: "something",
+            position: rootPosition,
+            primitiveProperties: { ttt: propertyPosition }
+        }
+        const v = setInfo({ ttt: "x" }, rootInfo)
+        const directives = getAllDirectives(v, [])
+        assert.deepStrictEqual(
+            directives,
+            {
+                abracadabra: 75,
+                b: 34
+            }
+        )
+    })
+    it("no info for primitive", () => {
+        const rootPosition : FilePosition = { line: 12, column: 14, directives: { abracadabra: 75, b: 34 } }
+        const rootInfo : RootObjectInfo = {
+            isChild: false,
+            url: "something",
+            position: rootPosition,
+            primitiveProperties: {}
+        }
+        const v = setInfo({ ttt: "x" }, rootInfo)
+        const directives = getAllDirectives(v, ["ttt"])
+        assert.deepStrictEqual(
+            directives,
+            {
+                abracadabra: 75,
+                b: 34
+            }
+        )
+    })
+    it("no root info", () => {
+        const directives = getAllDirectives({ ttt: "x" }, ["ttt"])
+        assert.deepStrictEqual(directives, {})
     })
 })

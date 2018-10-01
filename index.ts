@@ -195,19 +195,16 @@ export const propertySetMap = <T extends sm.PartialStringMap<keyof T & string, D
 export const getRootObjectInfo = (info: ObjectInfo): RootObjectInfo =>
   !info.isChild ? info : getRootObjectInfo(info.parent[objectInfoSymbol]())
 
-const getReversedPath = (info: ObjectInfo): Iterable<string|number> => {
-    function* iterator() {
-        let i = info
-        while (i.isChild) {
-            yield i.property
-            i = i.parent[objectInfoSymbol]()
-        }
+const getReversedInfoIterator = function *(info: ObjectInfo): IterableIterator<ObjectInfo> {
+    while (info.isChild) {
+        yield info
+        info = info.parent[objectInfoSymbol]()
     }
-    return _.iterable(iterator)
+    yield info
 }
 
 export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
-    _.reverse(getReversedPath(info))
+    _.reverse(_.filterMap(getReversedInfoIterator(info), i => i.isChild ? i.property : undefined))
 
 export const cloneDeep = <T extends Data>(source: T): T => {
     const data: Data = source
@@ -241,7 +238,16 @@ export const getFilePosition = (value: object): FilePosition|undefined => {
  * @param data
  * @param index
  */
-export const getChildFilePosition = (data: object, index: string|number): FilePosition|undefined => {
+export const getChildFilePosition = (
+    data: object|undefined,
+    index: string|number|undefined,
+): FilePosition|undefined => {
+    if (data === undefined) {
+        return undefined
+    }
+    if (index === undefined) {
+        return getFilePosition(data)
+    }
     const child: Data|undefined = (data as any)[index]
     if (child === undefined) {
         return undefined
@@ -256,6 +262,36 @@ export const getChildFilePosition = (data: object, index: string|number): FilePo
     return getFilePosition(child)
 }
 
+interface DataRef {
+    readonly parent: object|undefined
+    readonly index: string|number|undefined
+}
+
+/**
+ * Returns a data reference corresponding to the given path.
+ *
+ * @param object
+ * @param path
+ */
+const getDataRef = (object: object, path: Iterable<string|number>|undefined): DataRef => {
+    if (path === undefined) {
+        return { parent: object, index: undefined }
+    }
+    let index: string|number|undefined = undefined
+    // preserve the last index.
+    for (const i of path) {
+        if (index !== undefined) {
+            const newObject = (object as any)[index]
+            if (newObject === null || typeof newObject !== "object") {
+                return { parent: undefined, index: undefined }
+            }
+            object = newObject
+        }
+        index = i
+    }
+    return { parent: object, index }
+}
+
 /**
  * Get a file position of a descendant by path.
  *
@@ -266,21 +302,35 @@ export const getDescendantFilePosition = (
     object: object,
     path: Iterable<string|number>|undefined
 ): FilePosition|undefined => {
-    if (path === undefined) {
-        return getFilePosition(object)
+    const dataRef = getDataRef(object, path)
+    return getChildFilePosition(dataRef.parent, dataRef.index)
+}
+
+const getReversedFilePositions = function *(dataRef: DataRef): IterableIterator<FilePosition> {
+    const parent = dataRef.parent
+    if (parent === undefined) {
+        return
     }
-    let index: string|number|undefined = undefined
-    for (const i of path) {
-        if (index !== undefined) {
-            object = (object as any)[index]
+    if (dataRef.index !== undefined) {
+        const filePosition = getChildFilePosition(parent, dataRef.index)
+        if (filePosition !== undefined) {
+            yield filePosition
         }
-        if (object === null || typeof object !== "object") {
-            return undefined
-        }
-        index = i
     }
-    if (index === undefined) {
-        return getFilePosition(object)
+    let i = getInfo(parent)
+    if (i === undefined) {
+        return
     }
-    return getChildFilePosition(object, index)
+    yield *_.map(getReversedInfoIterator(i), v => v.position)
+}
+
+export const getAllDirectives = (
+    object: object,
+    path: Iterable<string|number>|undefined,
+): StringMap<unknown> => {
+    const dataRef = getDataRef(object, path)
+    const reversedFilePositions = getReversedFilePositions(dataRef)
+    const reversedDirectives = _.filterMap(reversedFilePositions, v => v.directives)
+    const directives = _.reverse(reversedDirectives)
+    return sm.merge(...directives)
 }
