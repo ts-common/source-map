@@ -58,14 +58,16 @@ export type ObjectInfo = ChildObjectInfo|RootObjectInfo
 export const objectInfoSymbol = Symbol.for("@ts-common/source-map/object-info")
 
 export interface TrackedBase {
-    readonly [objectInfoSymbol]: () => ObjectInfo
+    readonly [objectInfoSymbol]: InfoFunc
 }
 
 export type Tracked<T extends object> = T & TrackedBase
 
-export const setInfoFunc = <T extends object>(value: T, infoFunc: () => ObjectInfo): Tracked<T> => {
+export type InfoFunc = () => ObjectInfo
+
+export const setInfoFunc = <T extends object>(value: T, infoFunc: InfoFunc): Tracked<T> => {
     interface MutableTrackedBase {
-        [objectInfoSymbol]: () => ObjectInfo
+        [objectInfoSymbol]: InfoFunc
     }
     type MutableTracked = T & MutableTrackedBase;
     const result = value as MutableTracked
@@ -78,7 +80,7 @@ export const setInfoFunc = <T extends object>(value: T, infoFunc: () => ObjectIn
 export const setInfo = <T extends object>(value: T, info: ObjectInfo): Tracked<T> =>
     setInfoFunc(value, () => info)
 
-export const getInfoFunc = (value: object): (() => ObjectInfo)|undefined => {
+export const getInfoFunc = (value: object): InfoFunc|undefined => {
     const withInfo = value as Tracked<object>
     return withInfo[objectInfoSymbol]
 }
