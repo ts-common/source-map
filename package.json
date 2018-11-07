@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",
-    "test": "tsc && nyc mocha",
+    "test": "tsc && nyc mocha --reporter mocha-junit-reporter",
     "prepack": "npm install && tsc"
   },
   "nyc": {
@@ -47,6 +47,7 @@
     "@types/mocha": "^5.2.5",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
+    "mocha-junit-reporter": "^1.18.0",
     "nyc": "^13.1.0",
     "tslib": "^1.9.3",
     "typescript": "^3.1.6"
