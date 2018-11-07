@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/source-map",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Source Map",
   "main": "index.js",
   "scripts": {
@@ -10,9 +10,15 @@
   },
   "nyc": {
     "reporter": [
-      "lcov",
-      "text"
-    ]
+      "html",
+      "text",
+      "cobertura"
+    ],
+    "check-coverage": true,
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 100
   },
   "types": "index.d.ts",
   "files": [
