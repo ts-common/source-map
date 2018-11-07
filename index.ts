@@ -215,15 +215,14 @@ export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
  * Returns a deep clone of `source` and set a source-map for each member.
  *
  * @param source an original object
- * @param getOptional the function should return an object info of a provided member.
- *                    If the function is not provided the algorithm extract information from
- *                    the provided member.
+ * @param getInfoFunctOptional the function should return an object info of a provided member.
+ *     If the function is not provided the algorithm extract information from the provided member.
  */
 export const cloneDeep = <T extends Data>(
     source: T,
-    getOptional?: (member: Data|undefined) => InfoFunc|undefined
+    getInfoFuncOptional?: (member: Data|undefined) => InfoFunc|undefined
 ): T => {
-    const get = getOptional === undefined ? getInfoFunc : getOptional
+    const get = getInfoFuncOptional === undefined ? getInfoFunc : getInfoFuncOptional
     const clone = (data: Data): Data => {
         if (data === null ||
             typeof data === "boolean" ||
