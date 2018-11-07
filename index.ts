@@ -211,9 +211,17 @@ const getReversedInfoIterator = function *(info: ObjectInfo): IterableIterator<O
 export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
     _.reverse(_.filterMap(getReversedInfoIterator(info), i => i.isChild ? i.property : undefined))
 
+/**
+ * Returns a deep clone of `source` and set a source-map for each member.
+ *
+ * @param source an original object
+ * @param getOptional the function should return an object info of a provided member.
+ *                    If the function is not provided the algorithm extract information from
+ *                    the provided member.
+ */
 export const cloneDeep = <T extends Data>(
     source: T,
-    getOptional?: (v: Data|undefined) => InfoFunc|undefined
+    getOptional?: (member: Data|undefined) => InfoFunc|undefined
 ): T => {
     const get = getOptional === undefined ? getInfoFunc : getOptional
     const clone = (data: Data): Data => {
@@ -236,6 +244,13 @@ export const cloneDeep = <T extends Data>(
     return clone(source) as T
 }
 
+/**
+ * Returns a deep clone of `source`. Each member of the returned object will contain the provided
+ * source-map information.
+ *
+ * @param source
+ * @param infoFunc
+ */
 export const cloneDeepWithInfo = <T extends Data>(source: T, infoFunc: InfoFunc | undefined): T =>
     cloneDeep(source, () => infoFunc)
 
