@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/source-map",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Source Map",
   "main": "index.js",
   "scripts": {
