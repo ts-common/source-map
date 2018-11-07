@@ -211,21 +211,33 @@ const getReversedInfoIterator = function *(info: ObjectInfo): IterableIterator<O
 export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
     _.reverse(_.filterMap(getReversedInfoIterator(info), i => i.isChild ? i.property : undefined))
 
-export const cloneDeep = <T extends Data>(source: T): T => {
-    const data: Data = source
-    if (data === null ||
-        typeof data === "boolean" ||
-        typeof data === "number" ||
-        typeof data === "string"
-    ) {
-        return source
+export const cloneDeep = <T extends Data>(
+    source: T,
+    getOptional?: (v: Data|undefined) => InfoFunc|undefined
+): T => {
+    const get = getOptional === undefined ? getInfoFunc : getOptional
+    const clone = (data: Data): Data => {
+        if (data === null ||
+            typeof data === "boolean" ||
+            typeof data === "number" ||
+            typeof data === "string"
+        ) {
+            return data
+        }
+        const result = Array.isArray(data) ?
+            data.map(clone) :
+            sm.map(data as sm.StringMap<Data>, clone)
+        const infoFunc = get(data)
+        if (infoFunc !== undefined) {
+            setInfoFunc(result, infoFunc)
+        }
+        return result
     }
-    const result = Array.isArray(data) ?
-        data.map(cloneDeep) :
-        sm.map(data as sm.StringMap<Data>, cloneDeep)
-    copyInfo(data, result)
-    return result as T
+    return clone(source) as T
 }
+
+export const cloneDeepWithInfo = <T extends Data>(source: T, infoFunc: InfoFunc | undefined): T =>
+    cloneDeep(source, () => infoFunc)
 
 /**
  * Get a file position

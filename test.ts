@@ -20,7 +20,9 @@ import {
     Data,
     getDescendantFilePosition,
     FilePosition,
-    getAllDirectives
+    getAllDirectives,
+    getInfoFunc,
+    cloneDeepWithInfo
 } from "./index"
 import { Json } from '@ts-common/json'
 import { StringMap } from '@ts-common/string-map'
@@ -48,6 +50,13 @@ describe("info", () => {
 describe("getInfo", () => {
     it("no info", () => {
         const result = getInfo({})
+        assert.isUndefined(result)
+    })
+})
+
+describe("getInfoFunc", () => {
+    it("undefined", () => {
+        const result = getInfoFunc(undefined)
         assert.isUndefined(result)
     })
 })
@@ -287,6 +296,39 @@ describe("getPath", () => {
         const c: ObjectInfo = { isChild: true, position: { line: 1, column: 1 }, parent: bo, property: "rtx", primitiveProperties: {} }
         const r = getPath(c)
         assert.deepEqual([0, "haha", "rtx"], r)
+    })
+})
+
+describe("cloneDeepWithInfo", () => {
+    it("array & object", () => {
+        const childArray: Data[] = []
+        const obj = { a: 89, b: childArray, c: [] }
+        const source = [0, "something", null, false, obj]
+
+        const info = createRootObjectInfo({ line: 1, column: 7}, "hello.json", {})
+
+        const result = cloneDeepWithInfo(source, () => info)
+
+        assert.notStrictEqual(source, result)
+        assert.deepEqual(source, result)
+        const resultInfo = getInfo(result)
+        assert.strictEqual(info, resultInfo)
+
+        const resultObj = result[4]
+        assert.notStrictEqual(obj, resultObj)
+        assert.deepEqual(obj, resultObj)
+        if (resultObj === null || typeof resultObj !== "object") {
+            throw "resultObj"
+        }
+        const resultObjInfo = getInfo(resultObj)
+        assert.strictEqual(info, resultObjInfo)
+
+        const resultCa = resultObj.b
+        assert.notStrictEqual(resultCa, childArray)
+        assert.deepEqual(resultCa, childArray)
+
+        const resultCaInfo = getInfo(resultCa)
+        assert.strictEqual(info, resultCaInfo)
     })
 })
 
