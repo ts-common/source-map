@@ -1,18 +1,24 @@
 {
   "name": "@ts-common/source-map",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Source Map",
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",
-    "test": "tsc && nyc mocha",
+    "test": "tsc && nyc mocha --reporter mocha-junit-reporter",
     "prepack": "npm install && tsc"
   },
   "nyc": {
     "reporter": [
-      "lcov",
-      "text"
-    ]
+      "html",
+      "text",
+      "cobertura"
+    ],
+    "check-coverage": true,
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 100
   },
   "types": "index.d.ts",
   "files": [
@@ -41,6 +47,7 @@
     "@types/mocha": "^5.2.5",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
+    "mocha-junit-reporter": "^1.18.0",
     "nyc": "^13.1.0",
     "tslib": "^1.9.3",
     "typescript": "^3.1.6"

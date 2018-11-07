@@ -80,12 +80,15 @@ export const setInfoFunc = <T extends object>(value: T, infoFunc: InfoFunc): Tra
 export const setInfo = <T extends object>(value: T, info: ObjectInfo): Tracked<T> =>
     setInfoFunc(value, () => info)
 
-export const getInfoFunc = (value: object): InfoFunc|undefined => {
+export const getInfoFunc = (value: object | undefined): InfoFunc|undefined => {
+    if (value === undefined) {
+        return undefined
+    }
     const withInfo = value as Tracked<object>
     return withInfo[objectInfoSymbol]
 }
 
-export const getInfo = (value: object): ObjectInfo|undefined => {
+export const getInfo = (value: object | undefined): ObjectInfo|undefined => {
     const f = getInfoFunc(value)
     return f === undefined ? undefined : f()
 }
