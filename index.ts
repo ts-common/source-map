@@ -88,7 +88,7 @@ export const getInfoFunc = (value: object | undefined): InfoFunc|undefined => {
     return withInfo[objectInfoSymbol]
 }
 
-export const getInfo = (value: object): ObjectInfo|undefined => {
+export const getInfo = (value: object | undefined): ObjectInfo|undefined => {
     const f = getInfoFunc(value)
     return f === undefined ? undefined : f()
 }

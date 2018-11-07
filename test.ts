@@ -39,6 +39,10 @@ describe("info", () => {
         }
         assert.isFalse(infoX.isChild)
     })
+    it("undefined", () => {
+        const infoX = getInfo(undefined)
+        assert.isUndefined(infoX)
+    })
 })
 
 describe("getInfo", () => {
