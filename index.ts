@@ -211,21 +211,47 @@ const getReversedInfoIterator = function *(info: ObjectInfo): IterableIterator<O
 export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
     _.reverse(_.filterMap(getReversedInfoIterator(info), i => i.isChild ? i.property : undefined))
 
-export const cloneDeep = <T extends Data>(source: T): T => {
-    const data: Data = source
-    if (data === null ||
-        typeof data === "boolean" ||
-        typeof data === "number" ||
-        typeof data === "string"
-    ) {
-        return source
+/**
+ * Returns a deep clone of `source` and set a source-map for each member.
+ *
+ * @param source an original object
+ * @param getInfoFunctOptional the function should return an object info of a provided member.
+ *     If the function is not provided the algorithm extract information from the provided member.
+ */
+export const cloneDeep = <T extends Data>(
+    source: T,
+    getInfoFuncOptional?: (member: Data|undefined) => InfoFunc|undefined
+): T => {
+    const get = getInfoFuncOptional === undefined ? getInfoFunc : getInfoFuncOptional
+    const clone = (data: Data): Data => {
+        if (data === null ||
+            typeof data === "boolean" ||
+            typeof data === "number" ||
+            typeof data === "string"
+        ) {
+            return data
+        }
+        const result = Array.isArray(data) ?
+            data.map(clone) :
+            sm.map(data as sm.StringMap<Data>, clone)
+        const infoFunc = get(data)
+        if (infoFunc !== undefined) {
+            setInfoFunc(result, infoFunc)
+        }
+        return result
     }
-    const result = Array.isArray(data) ?
-        data.map(cloneDeep) :
-        sm.map(data as sm.StringMap<Data>, cloneDeep)
-    copyInfo(data, result)
-    return result as T
+    return clone(source) as T
 }
+
+/**
+ * Returns a deep clone of `source`. Each member of the returned object will contain the provided
+ * source-map information.
+ *
+ * @param source
+ * @param infoFunc
+ */
+export const cloneDeepWithInfo = <T extends Data>(source: T, infoFunc: InfoFunc | undefined): T =>
+    cloneDeep(source, () => infoFunc)
 
 /**
  * Get a file position
