@@ -2,7 +2,7 @@ import { StringMap } from "@ts-common/string-map"
 import * as sm from "@ts-common/string-map"
 import * as _ from "@ts-common/iterator"
 import * as propertySet from "@ts-common/property-set"
-import { JsonPrimitive, isPrimitive } from '@ts-common/json';
+import * as json from '@ts-common/json';
 
 export interface FilePosition {
     readonly line: number
@@ -57,19 +57,21 @@ export type ObjectInfo = ChildObjectInfo|RootObjectInfo
 
 export const objectInfoSymbol = Symbol.for("@ts-common/source-map/object-info")
 
-export interface TrackedBase {
+export interface TrackedBaseInterface {
     readonly [objectInfoSymbol]: InfoFunc
 }
 
-export type Tracked<T extends object> = T & TrackedBase
+export type TrackedBase = TrackedBaseInterface & json.JsonObject
+
+export type Tracked<T extends json.JsonRef> = T & TrackedBase
 
 export type InfoFunc = () => ObjectInfo
 
-export const setInfoFunc = <T extends object>(value: T, infoFunc: InfoFunc): Tracked<T> => {
+export const setInfoFunc = <T extends json.JsonRef>(value: T, infoFunc: InfoFunc): Tracked<T> => {
     interface MutableTrackedBase {
         [objectInfoSymbol]: InfoFunc
     }
-    type MutableTracked = T & MutableTrackedBase;
+    type MutableTracked = T & MutableTrackedBase & json.JsonObject;
     const result = value as MutableTracked
     if (result[objectInfoSymbol] === undefined) {
         result[objectInfoSymbol] = infoFunc
@@ -77,23 +79,23 @@ export const setInfoFunc = <T extends object>(value: T, infoFunc: InfoFunc): Tra
     return result
 }
 
-export const setInfo = <T extends object>(value: T, info: ObjectInfo): Tracked<T> =>
+export const setInfo = <T extends json.JsonRef>(value: T, info: ObjectInfo): Tracked<T> =>
     setInfoFunc(value, () => info)
 
-export const getInfoFunc = (value: object | undefined): InfoFunc|undefined => {
+export const getInfoFunc = (value: json.JsonRef | undefined): InfoFunc|undefined => {
     if (value === undefined) {
         return undefined
     }
-    const withInfo = value as Tracked<object>
+    const withInfo = value as Tracked<json.JsonRef>
     return withInfo[objectInfoSymbol]
 }
 
-export const getInfo = (value: object | undefined): ObjectInfo|undefined => {
+export const getInfo = (value: json.JsonRef | undefined): ObjectInfo|undefined => {
     const f = getInfoFunc(value)
     return f === undefined ? undefined : f()
 }
 
-export const copyInfo = <T extends object>(source: object, dest: T): T => {
+export const copyInfo = <T extends json.JsonRef>(source: json.JsonRef, dest: T): T => {
     const info = getInfoFunc(source)
     if (info !== undefined) {
         setInfoFunc(dest, info)
@@ -101,7 +103,7 @@ export const copyInfo = <T extends object>(source: object, dest: T): T => {
     return dest
 }
 
-export type Data = object|JsonPrimitive
+export type Data = json.Json
 
 export const copyDataInfo = <T extends Data>(source: Data, dest: T): T => {
     const destJson: Data = dest
@@ -231,9 +233,9 @@ export const cloneDeep = <T extends Data>(
         ) {
             return data
         }
-        const result = Array.isArray(data) ?
+        const result = _.isArray(data) ?
             data.map(clone) :
-            sm.map(data as sm.StringMap<Data>, clone)
+            sm.map(data, clone)
         const infoFunc = get(data)
         if (infoFunc !== undefined) {
             setInfoFunc(result, infoFunc)
@@ -258,7 +260,7 @@ export const cloneDeepWithInfo = <T extends Data>(source: T, infoFunc: InfoFunc 
  *
  * @param value
  */
-export const getFilePosition = (value: object): FilePosition|undefined => {
+export const getFilePosition = (value: json.JsonRef): FilePosition|undefined => {
     const info = getInfo(value)
     return info !== undefined ? info.position : undefined
 }
@@ -270,7 +272,7 @@ export const getFilePosition = (value: object): FilePosition|undefined => {
  * @param index
  */
 export const getChildFilePosition = (
-    data: object|undefined,
+    data: json.JsonRef|undefined,
     index: string|number|undefined,
 ): FilePosition|undefined => {
     if (data === undefined) {
@@ -283,7 +285,7 @@ export const getChildFilePosition = (
     if (child === undefined) {
         return undefined
     }
-    if (isPrimitive(child)) {
+    if (json.isPrimitive(child)) {
         const info = getInfo(data)
         if (info === undefined) {
             return undefined
@@ -294,7 +296,7 @@ export const getChildFilePosition = (
 }
 
 interface DataRef {
-    readonly parent: object|undefined
+    readonly parent: json.JsonRef|undefined
     readonly index: string|number|undefined
 }
 
@@ -304,7 +306,7 @@ interface DataRef {
  * @param object
  * @param path
  */
-const getDataRef = (object: object, path: Iterable<string|number>|undefined): DataRef => {
+const getDataRef = (object: json.JsonRef, path: Iterable<string|number>|undefined): DataRef => {
     if (path === undefined) {
         return { parent: object, index: undefined }
     }
@@ -330,7 +332,7 @@ const getDataRef = (object: object, path: Iterable<string|number>|undefined): Da
  * @param path
  */
 export const getDescendantFilePosition = (
-    object: object,
+    object: json.JsonRef,
     path: Iterable<string|number>|undefined
 ): FilePosition|undefined => {
     const dataRef = getDataRef(object, path)
@@ -356,7 +358,7 @@ const getReversedFilePositions = function *(dataRef: DataRef): IterableIterator<
 }
 
 export const getAllDirectives = (
-    object: object,
+    object: json.JsonRef,
     path: Iterable<string|number>|undefined,
 ): StringMap<unknown> => {
     const dataRef = getDataRef(object, path)
