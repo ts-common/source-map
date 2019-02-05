@@ -117,10 +117,12 @@ export const copyDataInfo = <T extends Data>(source: Data, dest: T): T => {
     return dest
 }
 
+export type JsonArrayOf<T> = ReadonlyArray<T> & object
+
 export const arrayMap = <T extends Data, R extends Data>(
-    source: ReadonlyArray<T>|undefined,
+    source: JsonArrayOf<T>|undefined,
     f: (v: T, i: number) => R
-): ReadonlyArray<R> => {
+): JsonArrayOf<R> => {
     if (source === undefined) {
         return []
     }

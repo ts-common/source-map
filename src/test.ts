@@ -24,6 +24,7 @@ import {
     getInfoFunc,
     cloneDeepWithInfo
 } from "./index"
+import * as json from "@ts-common/json"
 import { Json } from '@ts-common/json'
 import { StringMap } from '@ts-common/string-map'
 
@@ -65,7 +66,8 @@ describe("arrayMap", () => {
     it("arrayMap", () => {
         const a = ["aaa", "bb", "c"]
         const b = arrayMap(a, v => v)
-        assert.strictEqual(a, b)
+        const x: json.JsonArray = b
+        assert.strictEqual(a, x)
     })
     it("arrayMap", () => {
         const a = ["aaa", "bb", "c"]
