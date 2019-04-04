@@ -165,7 +165,7 @@ export const stringMapMap = <T extends Data, R extends Data>(
  * @param array
  */
 export const stringMapMerge = <T extends Data>(
-    ...array: Array<StringMap<T>|undefined>
+    ...array: readonly (StringMap<T>|undefined)[]
 ): StringMap<T> => {
     if (array.length === 0) {
         return {}
@@ -212,7 +212,7 @@ const getReversedInfoIterator = function *(info: ObjectInfo): IterableIterator<O
     yield info
 }
 
-export const getPath = (info: ObjectInfo): ReadonlyArray<string|number> =>
+export const getPath = (info: ObjectInfo): readonly (string|number)[] =>
     _.reverse(_.filterMap(getReversedInfoIterator(info), i => i.isChild ? i.property : undefined))
 
 /**
