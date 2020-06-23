@@ -7,7 +7,7 @@ import * as json from '@ts-common/json';
 export interface FilePosition {
     readonly line: number
     readonly column: number
-    /**
+    /*
      * This optional field can be used by parsers to set directives/pragmas.
      */
     readonly directives?: StringMap<unknown>
@@ -53,12 +53,45 @@ export const createChildObjectInfo = (
     primitiveProperties
 })
 
-export type ObjectInfo = ChildObjectInfo|RootObjectInfo
+export type ObjectInfo = ChildObjectInfo|RootObjectInfo;
 
 export const objectInfoSymbol = Symbol.for("@ts-common/source-map/object-info")
 
+export interface infoIdx {
+    readonly lineColPrimIdx: number
+    readonly directiveIdx: number
+    readonly parentPropIdx: number
+    readonly urlIdx: number
+    readonly isChild: boolean
+}
+
+let lineArr: Array<number> = [];
+let colArr: Array<number> = [];
+let dirArr: Array<StringMap<unknown>> = [];
+// n = size
+// n + 1 = key start idx
+// n + 2 = col, line start idx
+// n + 3 = primprop?? tba
+let primPropIdxArr: Array<number> = []; // self made map would be better, maybe a string|number array
+let primPropLineArr: Array<number> = [];
+let primPropColArr: Array<number> = [];
+let primPropKeyArr: Array<string> = [];
+let primPropDirArr: Array<StringMap<unknown>> = [];
+let parentArr: Array<number> = []; // Weak map? key = tracked base, value = idxArr idx
+let propArr: Array<string|number> = [];
+let urlArr: Array<string> = [];
+// Get rid of description (in sway)
+
+// another array to get all the idx (1d array representing n*5) using uint8array
+// n = lineColPrimIdx
+// +1 = directiveIdx
+// +2 = parentPropIdx
+// +3 = urlIdx
+// +4 = isChild
+let idxArr: Array<number> = [];
+
 export interface TrackedBaseInterface {
-    readonly [objectInfoSymbol]: InfoFunc
+    readonly [objectInfoSymbol]: number
 }
 
 export type TrackedBase = TrackedBaseInterface & json.JsonObject
@@ -69,36 +102,101 @@ export type InfoFunc = () => ObjectInfo
 
 export const setInfoFunc = <T extends json.JsonRef>(value: T, infoFunc: InfoFunc): Tracked<T> => {
     interface MutableTrackedBase {
-        [objectInfoSymbol]: InfoFunc
+        [objectInfoSymbol]: number
     }
     type MutableTracked = T & MutableTrackedBase & json.JsonObject;
     const result = value as MutableTracked
-    if (result[objectInfoSymbol] === undefined) {
-        result[objectInfoSymbol] = infoFunc
+    if (result[objectInfoSymbol] === undefined) { // grab from weak map instead
+        const info = infoFunc()
+        lineArr.push(info.position.line)
+        colArr.push(info.position.column)
+        if (info.position.directives !== undefined) {
+            dirArr.push(info.position.directives)
+        }
+
+        for (var key in info.primitiveProperties) {
+            var entry = info.primitiveProperties[key]
+            if (entry !== undefined) {
+                primPropLineArr.push(entry.line)
+                primPropColArr.push(entry.column)
+                primPropKeyArr.push(key)
+                primPropIdxArr.push(100)
+                primPropIdxArr.push(100)
+                primPropIdxArr.push(100)
+                primPropIdxArr.push(100)
+                if (entry.directives !== undefined) {
+                    primPropDirArr.push(entry.directives)
+                }
+            }
+        }
+        // primPropArr.push(info.primitiveProperties)
+        if (info.isChild) {
+            parentArr.push(info.parent[objectInfoSymbol])
+            propArr.push(info.property)
+        } else {
+            const root = info as RootObjectInfo
+            urlArr.push(root.url)
+        }
+
+        result[objectInfoSymbol] = idxArr.length
+
+        idxArr.push(lineArr.length - 1)
+        idxArr.push(info.position.directives !== undefined? -1 : dirArr.length - 1)
+        idxArr.push(info.isChild?parentArr.length - 1:-1)
+        idxArr.push(info.isChild?-1:urlArr.length - 1)
+        idxArr.push(info.isChild?1:0)
     }
     return result
 }
 
-export const setInfo = <T extends json.JsonRef>(value: T, info: ObjectInfo): Tracked<T> =>
-    setInfoFunc(value, () => info)
+export const setInfo = <T extends json.JsonRef>(value: T, info: ObjectInfo): Tracked<T> => {
+    return setInfoFunc(value, () => info)
+}
 
 export const getInfoFunc = (value: json.JsonRef | undefined): InfoFunc|undefined => {
-    if (value === undefined) {
+    const info = getInfo(value)
+    if (value === undefined || info === undefined) {
         return undefined
     }
-    const withInfo = value as Tracked<json.JsonRef>
-    return withInfo[objectInfoSymbol]
+    return () => { return info}
 }
 
 export const getInfo = (value: json.JsonRef | undefined): ObjectInfo|undefined => {
-    const f = getInfoFunc(value)
-    return f === undefined ? undefined : f()
+    const withInfo = value as Tracked<json.JsonRef>
+    const iidx = withInfo[objectInfoSymbol]
+    if (iidx === undefined) return undefined
+    const lineColPrimIdx = idxArr[iidx]
+    const directiveIdx = idxArr[iidx+1]
+    const parentPropIdx = idxArr[iidx+2]
+    const urlIdx = idxArr[iidx+3]
+    const isChild = idxArr[iidx+4]
+
+    const objInfo:ObjectInfo = isChild? {
+        isChild: true,
+        position:{line: lineArr[lineColPrimIdx], column: colArr[lineColPrimIdx], directives: directiveIdx===-1?undefined:dirArr[directiveIdx]},
+        parent: {[objectInfoSymbol]:parentArr[parentPropIdx]},
+        property: propArr[parentPropIdx],
+        primitiveProperties: {}//primPropArr[lineColPrimIdx]
+    }:{
+        isChild: false,
+        position: {line: lineArr[lineColPrimIdx], column: colArr[lineColPrimIdx], directives: directiveIdx===-1?undefined:dirArr[directiveIdx]},
+        url: urlArr[urlIdx],
+        primitiveProperties: {}//primPropArr[lineColPrimIdx]
+    }
+    return objInfo
+}
+
+export const getInfoIdx = (value: json.JsonRef | undefined) : number | undefined => {
+    const withInfo = value as Tracked<json.JsonRef>
+    const iidx = withInfo[objectInfoSymbol]
+    if (iidx === undefined) return undefined
+    return iidx
 }
 
 export const copyInfo = <T extends json.JsonRef>(source: json.JsonRef, dest: T): T => {
-    const info = getInfoFunc(source)
+    const info = getInfo(source)
     if (info !== undefined) {
-        setInfoFunc(dest, info)
+        setInfo(dest, info)
     }
     return dest
 }
@@ -201,19 +299,43 @@ export const propertySetMap = <T extends sm.PartialStringMap<keyof T & string, D
     return result
 }
 
-export const getRootObjectInfo = (info: ObjectInfo): RootObjectInfo =>
-  !info.isChild ? info : getRootObjectInfo(info.parent[objectInfoSymbol]())
+export const getRootObjectInfo = (info: ObjectInfo): RootObjectInfo => {
+    return !info.isChild ? info : getRootObjectInfoHelper(parentArr[idxArr[info.parent[objectInfoSymbol]+2]])
+}
 
-const getReversedInfoIterator = function *(info: ObjectInfo): IterableIterator<ObjectInfo> {
-    while (info.isChild) {
+const getRootObjectInfoHelper = (iidx: number): RootObjectInfo => {
+    const lineColPrimIdx = idxArr[iidx]
+    const directiveIdx = idxArr[iidx+1]
+    const parentPropIdx = idxArr[iidx+2]
+    const urlIdx = idxArr[iidx+3]
+    const isChild = idxArr[iidx+4]
+    return !isChild ? {
+    isChild: false,
+    position: {line: lineArr[lineColPrimIdx], column: colArr[lineColPrimIdx], directives: directiveIdx===-1?undefined:dirArr[directiveIdx]},
+    url: urlArr[urlIdx],
+    primitiveProperties: {}//primPropArr[lineColPrimIdx]
+    } : getRootObjectInfoHelper(parentArr[parentPropIdx])
+}
+
+
+const getReversedInfoIterator = function *(info: number): IterableIterator<number> {
+    while (idxArr[info+4]) {
         yield info
-        info = info.parent[objectInfoSymbol]()
+        info = parentArr[idxArr[info+2]]
     }
     yield info
 }
 
-export const getPath = (info: ObjectInfo): readonly (string|number)[] =>
-    _.reverse(_.filterMap(getReversedInfoIterator(info), i => i.isChild ? i.property : undefined))
+export const getPath = (info: number | undefined): readonly (string|number)[] => {
+    if (info === undefined) return _.reverse(undefined)
+    let temp: Array<string|number> = [];
+    while (info !== undefined) {
+        if (propArr[idxArr[info+2]] === undefined) break;
+        temp.unshift(propArr[idxArr[info+2]])
+        info = parentArr[idxArr[info+2]]
+    }
+    return temp
+}
 
 /**
  * Returns a deep clone of `source` and set a source-map for each member.
@@ -352,11 +474,17 @@ const getReversedFilePositions = function *(dataRef: DataRef): IterableIterator<
             yield filePosition
         }
     }
-    let i = getInfo(parent)
+    let i = parent as Tracked<json.JsonRef>
     if (i === undefined) {
         return
     }
-    yield *_.map(getReversedInfoIterator(i), v => v.position)
+    yield *_.map(getReversedInfoIterator(i[objectInfoSymbol]), v => {
+        const pos:FilePosition = {
+            line: lineArr[idxArr[v]],
+            column: colArr[idxArr[v]], 
+            directives: idxArr[v+1]===-1?undefined:dirArr[idxArr[v+1]]}
+        return pos
+    })
 }
 
 export const getAllDirectives = (
@@ -368,4 +496,9 @@ export const getAllDirectives = (
     const reversedDirectives = _.filterMap(reversedFilePositions, v => v.directives)
     const directives = _.reverse(reversedDirectives)
     return sm.merge(...directives)
+}
+eval("global")["clearStringMap"] = () => {
+    //primPropArr.splice(0);
+    // dirArr.splice(0);
+    // parentArr.splice(0);
 }
