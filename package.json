@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/source-map",
-  "version": "0.5.0",
+  "version": "1.1.0",
   "description": "Source Map",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -41,25 +41,25 @@
     "map"
   ],
   "author": "",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/ts-common/source-map/issues"
   },
   "homepage": "https://github.com/ts-common/source-map#readme",
   "devDependencies": {
-    "@types/chai": "^4.1.7",
+    "@types/chai": "^4.2.13",
     "@types/mocha": "^5.2.6",
     "chai": "^4.2.0",
     "mocha": "^6.0.2",
     "mocha-junit-reporter": "^1.21.0",
-    "nyc": "^13.3.0",
+    "nyc": "^15.0.0",
     "tslib": "^1.9.3",
     "typescript": "^3.4.1"
   },
   "dependencies": {
-    "@ts-common/iterator": "^0.3.0",
-    "@ts-common/json": "^0.3.0",
-    "@ts-common/property-set": "^0.1.0",
-    "@ts-common/string-map": "^0.3.0"
+    "@ts-common/iterator": "^1.1.0",
+    "@ts-common/json": "^1.1.0",
+    "@ts-common/property-set": "^1.1.0",
+    "@ts-common/string-map": "^1.1.0"
   }
 }
